@@ -41,3 +41,8 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 - `SessionStore`: cookies cifradas (EncryptedSharedPreferences). Nunca se guarda la contraseña.
 - `NewPipeDownloader`: interceptor que añade la cookie SOLO a youtube.com y subdominios.
 - Ajustes > Cuenta de Google: iniciar / cerrar sesión (borra cookies, limpia el WebView y reinicia el estado).
+
+## Fase 7: Biblioteca con datos de la cuenta
+- `data/library/InnerTubeClient`: peticiones autenticadas (cookies + SAPISIDHASH) a youtubei `browse`.
+- `LibraryRepository`: listas (FEplaylist_aggregation), suscripciones (FEchannels), videos de lista (PlaylistExtractor y, si falla, la API con sesión; "Ver después" = WL, "Me gustan" = LL).
+- `LibraryViewModel` + `LibraryScreen`: cada sección carga y falla por separado ("No disponible"), con spinner.

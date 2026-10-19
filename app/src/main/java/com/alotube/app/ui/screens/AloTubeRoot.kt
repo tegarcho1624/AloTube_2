@@ -37,7 +37,7 @@ fun AloTubeRoot(
             when (tab) {
                 0 -> MainScreen(onVideoClick = onVideoClick)
                 1 -> ComingSoonScreen(stringResource(R.string.soon_music))
-                2 -> ComingSoonScreen(stringResource(R.string.soon_library))
+                2 -> LibraryScreen(onVideoClick = onVideoClick)
                 else -> SettingsScreen(onAccentChanged = onAccentChanged, onLoggedOut = onLoggedOut)
             }
         }

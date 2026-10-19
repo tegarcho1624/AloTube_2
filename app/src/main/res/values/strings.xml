@@ -50,4 +50,17 @@
     <string name="login_error">No se pudo iniciar sesión. Inténtalo de nuevo.</string>
     <string name="login_net_error">No se pudo cargar la página. Revisa tu conexión.</string>
     <string name="login_saving">Guardando sesión…</string>
+    <string name="lib_title">Biblioteca</string>
+    <string name="lib_login_hint">Inicia sesión con tu cuenta de Google para ver tus suscripciones y listas de reproducción.</string>
+    <string name="lib_watch_later">Ver después</string>
+    <string name="lib_liked">Vídeos que me han gustado</string>
+    <string name="lib_playlists">Listas de reproducción</string>
+    <string name="lib_subs">Suscripciones</string>
+    <string name="lib_refresh">Actualizar</string>
+    <string name="lib_no_playlists">No tienes listas de reproducción.</string>
+    <string name="lib_no_subs">No tienes suscripciones.</string>
+    <string name="lib_playlist_empty">Esta lista no tiene videos.</string>
+    <string name="lib_unavailable">No disponible</string>
+    <string name="lib_expired">La sesión de Google caducó. Ve a Ajustes, cierra sesión y vuelve a iniciarla.</string>
+    <string name="lib_back">Volver</string>
 </resources>
