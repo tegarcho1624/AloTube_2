@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Único permiso: internet. PiP no requiere permisos. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Reproducción en segundo plano con notificación multimedia -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- Android 13+: sin él la reproducción funciona, pero no se ve la notificación -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Mantiene CPU/Wi-Fi activos con la pantalla apagada mientras suena -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
         android:name=".AloTubeApp"
@@ -30,5 +36,16 @@
             android:supportsPictureInPicture="true"
             android:resizeableActivity="true"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|keyboard|keyboardHidden|navigation|uiMode" />
+
+        <!-- stopWithTask=false: así onTaskRemoved se ejecuta y detiene el servicio de forma limpia -->
+        <service
+            android:name=".PlaybackService"
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback"
+            android:stopWithTask="false">
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaSessionService" />
+            </intent-filter>
+        </service>
     </application>
 </manifest>

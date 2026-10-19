@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -41,7 +41,7 @@ private fun SearchError.messageRes(): Int = when (this) {
 /** Pestaña "Inicio": logo, buscador y resultados. El padding de barras lo pone AloTubeRoot. */
 @Composable
 fun MainScreen(
-    onVideoClick: (VideoItem) -> Unit,
+    onVideoClick: (List<VideoItem>, Int) -> Unit,
     viewModel: SearchViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -96,8 +96,8 @@ fun MainScreen(
                     contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(18.dp)
                 ) {
-                    items(results) { video ->
-                        VideoListItem(video = video, onClick = { onVideoClick(video) })
+                    itemsIndexed(results) { index, video ->
+                        VideoListItem(video = video, onClick = { onVideoClick(results, index) })
                     }
                 }
             }

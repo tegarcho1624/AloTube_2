@@ -3,6 +3,7 @@
 package com.alotube.app.player
 
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.dash.DashMediaSource
@@ -27,19 +28,29 @@ object PlayerMediaSources {
             .setReadTimeoutMs(20_000)
     }
 
-    fun create(option: PlaybackOption): MediaSource {
+    /**
+     * [metadata] (título, autor, miniatura) va en el MediaItem principal: es lo que muestran
+     * la notificación y la pantalla de bloqueo.
+     */
+    fun create(option: PlaybackOption, metadata: MediaMetadata? = null): MediaSource {
+        fun item(url: String, meta: MediaMetadata?): MediaItem {
+            val builder = MediaItem.Builder().setUri(url)
+            if (meta != null) builder.setMediaMetadata(meta)
+            return builder.build()
+        }
+
         if (option.isHls) {
             return HlsMediaSource.Factory(dataSourceFactory)
-                .createMediaSource(MediaItem.fromUri(option.videoUrl))
+                .createMediaSource(item(option.videoUrl, metadata))
         }
         if (option.isDash) {
             return DashMediaSource.Factory(dataSourceFactory)
-                .createMediaSource(MediaItem.fromUri(option.videoUrl))
+                .createMediaSource(item(option.videoUrl, metadata))
         }
         val progressive = ProgressiveMediaSource.Factory(dataSourceFactory)
-        val video = progressive.createMediaSource(MediaItem.fromUri(option.videoUrl))
+        val video = progressive.createMediaSource(item(option.videoUrl, metadata))
         val audioUrl = option.audioUrl ?: return video
-        val audio = progressive.createMediaSource(MediaItem.fromUri(audioUrl))
+        val audio = progressive.createMediaSource(item(audioUrl, null))
         return MergingMediaSource(video, audio)
     }
 }

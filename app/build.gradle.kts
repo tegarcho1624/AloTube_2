@@ -12,8 +12,8 @@ android {
         applicationId = "com.alotube.app"
         minSdk = 26 // con 26+ NewPipeExtractor no necesita desugaring
         targetSdk = 34
-        versionCode = 4
-        versionName = "2.0.0-fase3"
+        versionCode = 5
+        versionName = "2.0.0-fase4"
     }
 
     buildTypes {
@@ -75,5 +75,6 @@ dependencies {
     implementation("androidx.media3:media3-exoplayer:1.4.1")
     implementation("androidx.media3:media3-exoplayer-hls:1.4.1") // directos / manifiestos HLS
     implementation("androidx.media3:media3-exoplayer-dash:1.4.1") // manifiestos DASH
+    implementation("androidx.media3:media3-session:1.4.1") // MediaSessionService + notificación
     implementation("androidx.media3:media3-ui:1.4.1")
 }

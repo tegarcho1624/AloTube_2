@@ -23,6 +23,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,6 +40,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.alotube.app.R
+import com.alotube.app.player.PlaybackPrefs
 import com.alotube.app.ui.components.aloTextFieldColors
 import com.alotube.app.ui.theme.AloColors
 import com.alotube.app.ui.theme.ThemeUtils
@@ -54,6 +56,7 @@ fun SettingsScreen(onAccentChanged: () -> Unit) {
 
     var hex by remember { mutableStateOf("") }
     var hexError by remember { mutableStateOf(false) }
+    var autoResume by remember { mutableStateOf(PlaybackPrefs.isAutoResume(ctx)) }
 
     fun pick(color: Int) {
         ThemeUtils.setAccent(ctx, color)
@@ -161,6 +164,40 @@ fun SettingsScreen(onAccentChanged: () -> Unit) {
             onAccentChanged()
         }) {
             Text(stringResource(R.string.accent_reset))
+        }
+
+        Spacer(Modifier.height(28.dp))
+        Text(
+            text = stringResource(R.string.audio_title),
+            style = MaterialTheme.typography.titleMedium,
+            color = AloColors.Ink
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.resume_title),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = AloColors.Ink
+                )
+                Text(
+                    text = stringResource(R.string.resume_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AloColors.Mut
+                )
+            }
+            Switch(
+                checked = autoResume,
+                onCheckedChange = {
+                    autoResume = it
+                    PlaybackPrefs.setAutoResume(ctx, it)
+                }
+            )
         }
     }
 }

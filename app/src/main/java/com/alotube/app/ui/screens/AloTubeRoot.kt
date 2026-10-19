@@ -19,7 +19,7 @@ import com.alotube.app.ui.theme.AloColors
 /** Raíz de la app: navegación inferior + pestaña activa. */
 @Composable
 fun AloTubeRoot(
-    onVideoClick: (VideoItem) -> Unit,
+    onVideoClick: (List<VideoItem>, Int) -> Unit,
     onAccentChanged: () -> Unit
 ) {
     var tab by rememberSaveable { mutableIntStateOf(0) }

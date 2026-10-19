@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.alotube.app.data.model.PlaybackOption
 import com.alotube.app.data.repository.StreamFetchException
+import com.alotube.app.player.PlaybackQueue
 import com.alotube.app.data.repository.StreamRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,6 +35,8 @@ enum class PlayerError {
 
 data class PlayerUiState(
     val title: String = "",
+    val author: String = "",
+    val thumbnailUrl: String? = null,
     val isLoading: Boolean = true,
     /** Calidades del menú (de mayor a menor). */
     val options: List<PlaybackOption> = emptyList(),
@@ -57,17 +60,26 @@ class PlayerViewModel(
     private val playbackNotes = mutableListOf<String>()
     private var job: Job? = null
 
+    init {
+        // Siguiente/Anterior (notificación, bloqueo, botones) solo mueven la cola: aquí se carga el video
+        viewModelScope.launch {
+            PlaybackQueue.state.collect { queue ->
+                queue.current?.let { load(it.url, it.title, it.author, it.thumbnailUrl) }
+            }
+        }
+    }
+
     /** Idempotente: si ya se cargó esta URL, no hace nada. */
-    fun load(url: String, title: String) {
+    fun load(url: String, title: String, author: String = "", thumbnailUrl: String? = null) {
         if (videoUrl == url) return
         videoUrl = url
-        _state.value = PlayerUiState(title = title)
+        _state.value = PlayerUiState(title = title, author = author, thumbnailUrl = thumbnailUrl)
         fetch()
     }
 
     /** Vuelve a pedir los enlaces (sirve también cuando un enlace caducó). */
     fun retry() {
-        _state.update { PlayerUiState(title = it.title) }
+        _state.update { PlayerUiState(title = it.title, author = it.author, thumbnailUrl = it.thumbnailUrl) }
         fetch()
     }
 
@@ -126,6 +138,7 @@ class PlayerViewModel(
                         _state.update {
                             it.copy(
                                 title = video.title.ifBlank { it.title },
+                                author = video.author.ifBlank { it.author },
                                 isLoading = false,
                                 options = video.options,
                                 fallback = video.fallback,

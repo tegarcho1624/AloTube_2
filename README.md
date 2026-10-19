@@ -29,3 +29,9 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 - Navegación inferior (Inicio / Música / Biblioteca / Ajustes) con íconos de trazo propios. Ajustes permite cambiar el acento (recrea la Activity).
 - Controles de Media3 tematizados en `player/PlayerControlsStyle.kt`.
 - Pon la fuente del launcher (.ttf/.otf) en `app/src/main/assets/fonts/`.
+
+## Fase 4: audio en segundo plano
+- `PlayerProvider`: el ÚNICO ExoPlayer de la app. `PlaybackService` (MediaSessionService) lo envuelve en una MediaSession -> notificación MediaStyle y controles en pantalla de bloqueo.
+- `PlaybackQueue` + `QueueAwarePlayer`: Siguiente/Anterior = video siguiente/anterior de los resultados de búsqueda.
+- Audio focus lo gestiona ExoPlayer; el ajuste "Reanudar tras interrupciones" está en Ajustes.
+- Permisos: INTERNET, FOREGROUND_SERVICE, FOREGROUND_SERVICE_MEDIA_PLAYBACK, POST_NOTIFICATIONS (se pide al primer inicio en Android 13+), WAKE_LOCK.

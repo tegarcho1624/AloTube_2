@@ -35,4 +35,8 @@
     <string name="accent_add">Añadir</string>
     <string name="accent_reset">Restablecer dorado</string>
     <string name="accent_hex_error">HEX no válido. Usa 6 dígitos, por ejemplo #C9A24B.</string>
+    <string name="notif_channel_name">Reproducción de AloTube</string>
+    <string name="audio_title">Audio y segundo plano</string>
+    <string name="resume_title">Reanudar tras interrupciones</string>
+    <string name="resume_desc">Tras una llamada o un aviso breve, AloTube sigue solo. Si otra app (p. ej. Spotify) toma el audio, se pausa y la reanudas tú.</string>
 </resources>
