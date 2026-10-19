@@ -2,6 +2,7 @@ package com.alotube.app
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.content.Intent
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -11,6 +12,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import com.alotube.app.player.PlaybackQueue
+import com.alotube.app.player.PlayerProvider
 import com.alotube.app.ui.screens.AloTubeRoot
 import com.alotube.app.ui.theme.AloTubeTheme
 import com.alotube.app.ui.theme.ThemeUtils
@@ -38,11 +41,23 @@ class MainActivity : ComponentActivity() {
                         PlayerActivity.start(this, queue, index)
                     },
                     // Cambió el acento: se recrea la Activity para aplicarlo en toda la UI
-                    onAccentChanged = { recreate() }
+                    onAccentChanged = { recreate() },
+                    onLoggedOut = { restartApp() }
                 )
             }
         }
         askNotificationPermissionOnce()
+    }
+
+    /** Cerrar sesión: se detiene la reproducción y se reinicia la app con el estado limpio. */
+    private fun restartApp() {
+        PlayerProvider.stopPlayback(this)
+        PlaybackQueue.clear()
+        startActivity(
+            Intent(this, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        )
+        finish()
     }
 
     /** Android 13+: se pide POST_NOTIFICATIONS la primera vez que se abre la app. */

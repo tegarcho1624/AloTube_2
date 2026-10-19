@@ -20,7 +20,8 @@ import com.alotube.app.ui.theme.AloColors
 @Composable
 fun AloTubeRoot(
     onVideoClick: (List<VideoItem>, Int) -> Unit,
-    onAccentChanged: () -> Unit
+    onAccentChanged: () -> Unit,
+    onLoggedOut: () -> Unit
 ) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
 
@@ -37,7 +38,7 @@ fun AloTubeRoot(
                 0 -> MainScreen(onVideoClick = onVideoClick)
                 1 -> ComingSoonScreen(stringResource(R.string.soon_music))
                 2 -> ComingSoonScreen(stringResource(R.string.soon_library))
-                else -> SettingsScreen(onAccentChanged = onAccentChanged)
+                else -> SettingsScreen(onAccentChanged = onAccentChanged, onLoggedOut = onLoggedOut)
             }
         }
     }

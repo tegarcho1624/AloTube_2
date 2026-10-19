@@ -35,3 +35,9 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 - `PlaybackQueue` + `QueueAwarePlayer`: Siguiente/Anterior = video siguiente/anterior de los resultados de búsqueda.
 - Audio focus lo gestiona ExoPlayer; el ajuste "Reanudar tras interrupciones" está en Ajustes.
 - Permisos: INTERNET, FOREGROUND_SERVICE, FOREGROUND_SERVICE_MEDIA_PLAYBACK, POST_NOTIFICATIONS (se pide al primer inicio en Android 13+), WAKE_LOCK.
+
+## Fase 5: cuenta de Google
+- `LoginActivity` + `LoginScreen`: WebView con accounts.google.com; al llegar a youtube.com se leen las cookies (SAPISID y __Secure-3PAPISID obligatorias).
+- `SessionStore`: cookies cifradas (EncryptedSharedPreferences). Nunca se guarda la contraseña.
+- `NewPipeDownloader`: interceptor que añade la cookie SOLO a youtube.com y subdominios.
+- Ajustes > Cuenta de Google: iniciar / cerrar sesión (borra cookies, limpia el WebView y reinicia el estado).

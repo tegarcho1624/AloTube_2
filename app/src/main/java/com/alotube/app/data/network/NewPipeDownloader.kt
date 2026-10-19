@@ -1,5 +1,6 @@
 package com.alotube.app.data.network
 
+import com.alotube.app.data.auth.SessionStore
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.schabi.newpipe.extractor.downloader.Downloader
@@ -17,7 +18,24 @@ object NewPipeDownloader : Downloader() {
     private val client: OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(20, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
+        // Sesión de Google: se añade la cookie en CADA salto de red, y solo si el destino es
+        // youtube.com o un subdominio (nunca a otros hosts, ni tras una redirección externa).
+        // Sin sesión iniciada no hace nada: el comportamiento es idéntico al de antes.
+        .addNetworkInterceptor { chain ->
+            val request = chain.request()
+            val cookie = SessionStore.cookieHeader
+            if (cookie != null && isYoutubeHost(request.url.host)) {
+                val existing = request.header("Cookie")
+                val merged = if (existing.isNullOrBlank()) cookie else "$existing; $cookie"
+                chain.proceed(request.newBuilder().header("Cookie", merged).build())
+            } else {
+                chain.proceed(request)
+            }
+        }
         .build()
+
+    private fun isYoutubeHost(host: String): Boolean =
+        host == "youtube.com" || host.endsWith(".youtube.com")
 
     override fun execute(request: Request): Response {
         val httpMethod = request.httpMethod()

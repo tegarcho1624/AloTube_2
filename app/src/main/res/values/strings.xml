@@ -39,4 +39,15 @@
     <string name="audio_title">Audio y segundo plano</string>
     <string name="resume_title">Reanudar tras interrupciones</string>
     <string name="resume_desc">Tras una llamada o un aviso breve, AloTube sigue solo. Si otra app (p. ej. Spotify) toma el audio, se pausa y la reanudas tú.</string>
+    <string name="account_title">Cuenta de Google</string>
+    <string name="account_desc">Inicia sesión para acceder a contenido con restricción de edad o premium. Usa una cuenta secundaria: YouTube puede limitar las cuentas que se usan con apps no oficiales.</string>
+    <string name="account_login">Iniciar sesión</string>
+    <string name="account_logout">Cerrar sesión</string>
+    <string name="account_connected">Cuenta conectada</string>
+    <string name="account_logged_desc">La sesión se guarda cifrada en este dispositivo. Tu contraseña nunca se guarda.</string>
+    <string name="login_title">Iniciar sesión en Google</string>
+    <string name="login_close">Cerrar</string>
+    <string name="login_error">No se pudo iniciar sesión. Inténtalo de nuevo.</string>
+    <string name="login_net_error">No se pudo cargar la página. Revisa tu conexión.</string>
+    <string name="login_saving">Guardando sesión…</string>
 </resources>

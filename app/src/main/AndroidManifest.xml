@@ -37,6 +37,13 @@
             android:resizeableActivity="true"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|keyboard|keyboardHidden|navigation|uiMode" />
 
+        <!-- Inicio de sesión de Google (WebView). configChanges: no se recarga la página al rotar -->
+        <activity
+            android:name=".LoginActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|keyboard|keyboardHidden|navigation|uiMode" />
+
         <!-- stopWithTask=false: así onTaskRemoved se ejecuta y detiene el servicio de forma limpia -->
         <service
             android:name=".PlaybackService"

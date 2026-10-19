@@ -1,5 +1,8 @@
 package com.alotube.app.ui.screens
 
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -39,7 +42,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.alotube.app.LoginActivity
 import com.alotube.app.R
+import com.alotube.app.data.auth.SessionStore
+import com.alotube.app.data.auth.WebSessionCleaner
 import com.alotube.app.player.PlaybackPrefs
 import com.alotube.app.ui.components.aloTextFieldColors
 import com.alotube.app.ui.theme.AloColors
@@ -48,7 +55,7 @@ import com.alotube.app.ui.theme.accents
 
 /** Pestaña "Ajustes": elegir el color de acento. Al cambiarlo se recrea la Activity (onAccentChanged). */
 @Composable
-fun SettingsScreen(onAccentChanged: () -> Unit) {
+fun SettingsScreen(onAccentChanged: () -> Unit, onLoggedOut: () -> Unit) {
     val ctx = LocalContext.current
     val current = ThemeUtils.accent(ctx)
     val customs = ThemeUtils.customColors(ctx)
@@ -57,6 +64,9 @@ fun SettingsScreen(onAccentChanged: () -> Unit) {
     var hex by remember { mutableStateOf("") }
     var hexError by remember { mutableStateOf(false) }
     var autoResume by remember { mutableStateOf(PlaybackPrefs.isAutoResume(ctx)) }
+    val session by SessionStore.state.collectAsStateWithLifecycle()
+    // El estado se actualiza solo (StateFlow) cuando LoginActivity guarda la sesión
+    val loginLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { }
 
     fun pick(color: Int) {
         ThemeUtils.setAccent(ctx, color)
@@ -198,6 +208,46 @@ fun SettingsScreen(onAccentChanged: () -> Unit) {
                     PlaybackPrefs.setAutoResume(ctx, it)
                 }
             )
+        }
+
+        Spacer(Modifier.height(28.dp))
+        Text(
+            text = stringResource(R.string.account_title),
+            style = MaterialTheme.typography.titleMedium,
+            color = AloColors.Ink
+        )
+        if (session.loggedIn) {
+            Text(
+                text = session.email ?: stringResource(R.string.account_connected),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.accents.hi,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+            Text(
+                text = stringResource(R.string.account_logged_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = AloColors.Mut,
+                modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)
+            )
+            OutlinedButton(onClick = {
+                SessionStore.clear(ctx)      // cookies guardadas
+                WebSessionCleaner.wipe()     // CookieManager y datos del WebView
+                onLoggedOut()                // reinicia el estado de la app
+            }) {
+                Text(stringResource(R.string.account_logout))
+            }
+        } else {
+            Text(
+                text = stringResource(R.string.account_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = AloColors.Mut,
+                modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)
+            )
+            Button(onClick = {
+                loginLauncher.launch(Intent(ctx, LoginActivity::class.java))
+            }) {
+                Text(stringResource(R.string.account_login))
+            }
         }
     }
 }

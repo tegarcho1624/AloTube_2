@@ -12,8 +12,8 @@ android {
         applicationId = "com.alotube.app"
         minSdk = 26 // con 26+ NewPipeExtractor no necesita desugaring
         targetSdk = 34
-        versionCode = 5
-        versionName = "2.0.0-fase4"
+        versionCode = 6
+        versionName = "2.0.0-fase5"
     }
 
     buildTypes {
@@ -70,6 +70,9 @@ dependencies {
     // Extracción de YouTube (sin API key, sin cuenta de Google).
     // v0.26.3+ incluye el workaround de SABR; si cambias la versión, actualiza EXTRACTOR_VERSION en StreamRepository.
     implementation("com.github.TeamNewPipe:NewPipeExtractor:v0.26.5")
+
+    // Almacén cifrado de la sesión (cookies)
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
     // Reproductor
     implementation("androidx.media3:media3-exoplayer:1.4.1")
