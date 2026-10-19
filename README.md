@@ -19,3 +19,7 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 - `StreamRepository`: StreamInfo -> mejor video (video-only + audio, unidos con MergingMediaSource) y flujo compatible de respaldo.
 - `PlayerViewModel`: estado, calidad elegida, reintento y respaldo automático.
 - Errores: mensaje en pantalla con botones Volver / Reintentar.
+
+## Fase 2.1 (SABR)
+- NewPipeExtractor v0.26.5 (incluye el workaround SABR de v0.26.3).
+- `StreamRepository`: 3 intentos (StreamInfo -> StreamExtractor directo -> StreamInfo tras pausa), fallback a HLS/DASH, y error con el detalle de cada intento.

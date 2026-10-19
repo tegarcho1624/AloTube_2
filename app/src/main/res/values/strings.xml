@@ -16,9 +16,9 @@
     <string name="pip">PiP</string>
     <string name="perr_network">No hay conexión a internet. Revisa tu red e inténtalo de nuevo.</string>
     <string name="perr_blocked">YouTube está pidiendo verificación o limitando las solicitudes. Espera un momento y reintenta.</string>
-    <string name="perr_unavailable">Este video no está disponible (privado, con restricción de edad o de región).</string>
-    <string name="perr_extraction">No se pudo obtener el video. Es posible que haya que actualizar NewPipeExtractor.</string>
-    <string name="perr_no_streams">No se encontró ninguna transmisión reproducible para este video.</string>
+    <string name="perr_unavailable">YouTube respondió que el video no está disponible. Puede ser privado, con restricción de edad o de región, o un bloqueo de YouTube. Abajo se muestra el detalle técnico.</string>
+    <string name="perr_extraction">No se pudo obtener el video: YouTube cambió su formato o respondió algo inesperado. Abajo se muestra el detalle técnico.</string>
+    <string name="perr_no_streams">No se encontró ninguna transmisión reproducible. Los videos para niños pueden no funcionar con el método actual. Abajo se muestra el detalle de cada intento.</string>
     <string name="perr_playback">No se pudo reproducir el video. El enlace pudo caducar o fallar; pulsa Reintentar para pedirlo de nuevo.</string>
     <string name="perr_unknown">Ocurrió un error inesperado al abrir el video.</string>
 </resources>

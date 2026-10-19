@@ -5,6 +5,7 @@ package com.alotube.app.player
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.dash.DashMediaSource
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.MergingMediaSource
@@ -29,6 +30,10 @@ object PlayerMediaSources {
     fun create(option: PlaybackOption): MediaSource {
         if (option.isHls) {
             return HlsMediaSource.Factory(dataSourceFactory)
+                .createMediaSource(MediaItem.fromUri(option.videoUrl))
+        }
+        if (option.isDash) {
+            return DashMediaSource.Factory(dataSourceFactory)
                 .createMediaSource(MediaItem.fromUri(option.videoUrl))
         }
         val progressive = ProgressiveMediaSource.Factory(dataSourceFactory)

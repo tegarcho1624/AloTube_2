@@ -72,7 +72,7 @@ class PlayerActivity : ComponentActivity() {
 
         player.addListener(object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
-                viewModel.onPlaybackError()
+                viewModel.onPlaybackError(describePlaybackError(error))
             }
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -119,11 +119,20 @@ class PlayerActivity : ComponentActivity() {
 
     private fun applySource(option: PlaybackOption) {
         // Al cambiar de calidad se conserva la posición actual
-        val position = if (player.mediaItemCount > 0 && !option.isHls) player.currentPosition else 0L
+        val position = if (player.mediaItemCount > 0 && !option.isHls && !option.isDash) player.currentPosition else 0L
         val source = PlayerMediaSources.create(option)
         if (position > 0) player.setMediaSource(source, position) else player.setMediaSource(source)
         player.prepare()
         player.playWhenReady = true
+    }
+
+    /** Resumen técnico del fallo de Media3 (código + causa, p. ej. HTTP 403) para el diagnóstico. */
+    private fun describePlaybackError(e: PlaybackException): String = buildString {
+        append(e.errorCodeName)
+        e.cause?.let { c ->
+            append(" / ").append(c.javaClass.simpleName)
+            c.message?.let { append(": ").append(it.take(120)) }
+        }
     }
 
     private fun setFullscreen(enter: Boolean) {
