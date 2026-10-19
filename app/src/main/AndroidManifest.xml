@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Único permiso: internet -->
+    <!-- Único permiso: internet. PiP no requiere permisos. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
@@ -22,5 +22,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- configChanges: evita que la Activity se recree al rotar o cambiar a/desde PiP -->
+        <activity
+            android:name=".PlayerActivity"
+            android:exported="false"
+            android:supportsPictureInPicture="true"
+            android:resizeableActivity="true"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|keyboard|keyboardHidden|navigation|uiMode" />
     </application>
 </manifest>

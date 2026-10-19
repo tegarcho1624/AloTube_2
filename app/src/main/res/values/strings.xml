@@ -12,4 +12,13 @@
     <string name="error_blocked">YouTube está pidiendo verificación o limitando las solicitudes. Espera un momento y reintenta.</string>
     <string name="error_extraction">No se pudieron leer los resultados. Es posible que YouTube haya cambiado su formato y haya que actualizar NewPipeExtractor.</string>
     <string name="error_unknown">Ocurrió un error inesperado.</string>
+    <string name="back">Volver</string>
+    <string name="pip">PiP</string>
+    <string name="perr_network">No hay conexión a internet. Revisa tu red e inténtalo de nuevo.</string>
+    <string name="perr_blocked">YouTube está pidiendo verificación o limitando las solicitudes. Espera un momento y reintenta.</string>
+    <string name="perr_unavailable">Este video no está disponible (privado, con restricción de edad o de región).</string>
+    <string name="perr_extraction">No se pudo obtener el video. Es posible que haya que actualizar NewPipeExtractor.</string>
+    <string name="perr_no_streams">No se encontró ninguna transmisión reproducible para este video.</string>
+    <string name="perr_playback">No se pudo reproducir el video. El enlace pudo caducar o fallar; pulsa Reintentar para pedirlo de nuevo.</string>
+    <string name="perr_unknown">Ocurrió un error inesperado al abrir el video.</string>
 </resources>

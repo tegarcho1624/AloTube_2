@@ -12,8 +12,8 @@ android {
         applicationId = "com.alotube.app"
         minSdk = 26 // con 26+ NewPipeExtractor no necesita desugaring
         targetSdk = 34
-        versionCode = 1
-        versionName = "2.0.0-fase1"
+        versionCode = 2
+        versionName = "2.0.0-fase2"
     }
 
     buildTypes {
@@ -70,7 +70,8 @@ dependencies {
     // Extracción de YouTube (sin API key, sin cuenta de Google)
     implementation("com.github.TeamNewPipe:NewPipeExtractor:v0.24.8")
 
-    // Reproductor (se usará en la Fase 2)
+    // Reproductor
     implementation("androidx.media3:media3-exoplayer:1.4.1")
+    implementation("androidx.media3:media3-exoplayer-hls:1.4.1") // directos
     implementation("androidx.media3:media3-ui:1.4.1")
 }

@@ -1,4 +1,4 @@
-# AloTube 2.0 — Fase 1: interfaz y búsqueda
+# AloTube 2.0 — Fase 2: reproductor + PiP (incluye Fase 1: búsqueda)
 
 App nativa Android (Kotlin + Jetpack Compose + Material 3) para buscar videos de YouTube
 sin anuncios ni telemetría. Único permiso: INTERNET.
@@ -14,5 +14,8 @@ sin anuncios ni telemetría. Único permiso: INTERNET.
 GitHub Actions (`.github/workflows/build.yml`) genera el APK debug:
 pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 
-## Fase 2 (pendiente)
-Reproductor Media3 (ya incluido como dependencia) + obtención de streams con StreamInfo.
+## Fase 2
+- `PlayerActivity`: pantalla completa, Media3, PiP (`supportsPictureInPicture`, `onUserLeaveHint`, `onPictureInPictureModeChanged`).
+- `StreamRepository`: StreamInfo -> mejor video (video-only + audio, unidos con MergingMediaSource) y flujo compatible de respaldo.
+- `PlayerViewModel`: estado, calidad elegida, reintento y respaldo automático.
+- Errores: mensaje en pantalla con botones Volver / Reintentar.
