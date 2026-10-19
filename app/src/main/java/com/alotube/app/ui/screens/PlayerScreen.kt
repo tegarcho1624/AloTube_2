@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -47,6 +48,8 @@ import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.alotube.app.R
 import com.alotube.app.data.model.PlaybackOption
+import com.alotube.app.player.applyAloStyle
+import com.alotube.app.ui.theme.accents
 import com.alotube.app.viewmodel.PlayerError
 import com.alotube.app.viewmodel.PlayerUiState
 
@@ -74,11 +77,18 @@ fun PlayerScreen(
 ) {
     val controlsVisible = remember { mutableStateOf(true) }
     val error = state.error
+    val cs = MaterialTheme.colorScheme
+    val accents = MaterialTheme.accents
+    val accentInt = accents.accent.toArgb()
+    val accentHiInt = accents.hi.toArgb()
+    val inkInt = cs.onBackground.toArgb()
+    val mutedInt = cs.onSurfaceVariant.toArgb()
+    val bgInt = cs.background.toArgb()
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(cs.background)
     ) {
         if (error != null) {
             Column(
@@ -90,14 +100,14 @@ fun PlayerScreen(
             ) {
                 Text(
                     text = stringResource(error.messageRes()),
-                    color = Color.White,
+                    color = cs.onBackground,
                     textAlign = TextAlign.Center
                 )
                 // Detalle técnico para diagnosticar (intentos, excepción, cliente...)
                 if (!inPip && !state.errorDetail.isNullOrBlank()) {
                     Text(
                         text = state.errorDetail,
-                        color = Color.White.copy(alpha = 0.6f),
+                        color = cs.onSurfaceVariant,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(top = 12.dp)
                     )
@@ -118,6 +128,7 @@ fun PlayerScreen(
                 factory = { ctx ->
                     PlayerView(ctx).apply {
                         player = exoPlayer
+                        applyAloStyle(accentInt, accentHiInt, inkInt, mutedInt, bgInt)
                         resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
                         setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
                         setFullscreenButtonClickListener(
@@ -139,7 +150,7 @@ fun PlayerScreen(
             if (state.isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center),
-                    color = Color.White
+                    color = accents.accent
                 )
             }
 
@@ -162,25 +173,25 @@ fun PlayerScreen(
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.back),
-                            tint = Color.White
+                            tint = cs.onBackground
                         )
                     }
                     Text(
                         text = state.title,
-                        color = Color.White,
+                        color = cs.onBackground,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
                     )
                     if (onEnterPip != null) {
                         TextButton(onClick = onEnterPip) {
-                            Text(stringResource(R.string.pip), color = Color.White)
+                            Text(stringResource(R.string.pip), color = cs.onBackground)
                         }
                     }
                     if (state.options.size > 1) {
                         Box {
                             TextButton(onClick = { menuOpen = true }) {
-                                Text(state.current?.label ?: "", color = Color.White)
+                                Text(state.current?.label ?: "", color = accents.hi)
                             }
                             DropdownMenu(
                                 expanded = menuOpen,

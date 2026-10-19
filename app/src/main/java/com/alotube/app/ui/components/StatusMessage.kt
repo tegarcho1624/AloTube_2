@@ -11,7 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
-/** Mensaje centrado (error, sin resultados, ayuda inicial) con botón opcional. */
+/** Mensaje centrado (error, sin resultados, ayuda inicial) con botón opcional en el acento. */
 @Composable
 fun StatusMessage(
     text: String,
@@ -26,6 +26,7 @@ fun StatusMessage(
         Text(
             text = text,
             style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
         if (actionLabel != null && onAction != null) {

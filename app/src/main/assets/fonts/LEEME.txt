@@ -1,0 +1,4 @@
+Pon aquí la(s) fuente(s) .ttf / .otf del launcher (por ejemplo MiFuente.ttf).
+AloTube usa automáticamente la primera en orden alfabético.
+Para elegir otra, guarda en SharedPreferences "settings" la clave "font" con el valor "file:Nombre.ttf".
+Si no hay ninguna, se usa la fuente predeterminada del sistema (sin errores).

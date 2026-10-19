@@ -21,4 +21,18 @@
     <string name="perr_no_streams">No se encontró ninguna transmisión reproducible. Los videos para niños pueden no funcionar con el método actual. Abajo se muestra el detalle de cada intento.</string>
     <string name="perr_playback">No se pudo reproducir el video. El enlace pudo caducar o fallar; pulsa Reintentar para pedirlo de nuevo.</string>
     <string name="perr_unknown">Ocurrió un error inesperado al abrir el video.</string>
+    <string name="nav_home">Inicio</string>
+    <string name="nav_music">Música</string>
+    <string name="nav_library">Biblioteca</string>
+    <string name="nav_settings">Ajustes</string>
+    <string name="soon_title">Próximamente</string>
+    <string name="soon_music">La música llegará en una fase futura.</string>
+    <string name="soon_library">Tu biblioteca llegará en una fase futura.</string>
+    <string name="settings_title">Ajustes</string>
+    <string name="accent_title">Color de acento</string>
+    <string name="accent_desc">Se usa en botones, íconos activos y la barra de progreso del reproductor.</string>
+    <string name="accent_custom">Color propio (HEX)</string>
+    <string name="accent_add">Añadir</string>
+    <string name="accent_reset">Restablecer dorado</string>
+    <string name="accent_hex_error">HEX no válido. Usa 6 dígitos, por ejemplo #C9A24B.</string>
 </resources>
