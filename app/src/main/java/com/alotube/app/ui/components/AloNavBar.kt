@@ -23,6 +23,7 @@ private data class NavItem(@StringRes val label: Int, @DrawableRes val icon: Int
 private val items = listOf(
     NavItem(R.string.nav_home, R.drawable.ic_nav_home),
     NavItem(R.string.nav_music, R.drawable.ic_nav_music),
+    NavItem(R.string.nav_video_player, R.drawable.ic_nav_player),
     NavItem(R.string.nav_library, R.drawable.ic_nav_library),
     NavItem(R.string.nav_settings, R.drawable.ic_nav_settings)
 )

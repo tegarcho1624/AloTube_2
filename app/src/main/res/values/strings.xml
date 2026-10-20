@@ -95,4 +95,6 @@
     <string name="dl_err_range">El servidor no admite descarga por partes</string>
     <string name="dl_processing">Procesando archivo…</string>
     <string name="dl_err_audio">No se encontró una pista de audio compatible para unir con el video</string>
+    <string name="nav_video_player">Video Player</string>
+    <string name="local_player_soon">Reproductor de videos locales - Próximamente</string>
 </resources>
