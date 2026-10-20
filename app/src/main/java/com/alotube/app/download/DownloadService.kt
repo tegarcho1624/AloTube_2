@@ -15,6 +15,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.provider.MediaStore
+import android.webkit.MimeTypeMap
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
@@ -22,6 +23,7 @@ import androidx.core.content.ContextCompat
 import com.alotube.app.MainActivity
 import com.alotube.app.R
 import com.alotube.app.data.download.DownloadRequest
+import com.alotube.app.data.download.PostProcess
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -30,6 +32,8 @@ import kotlinx.coroutines.launch
 import okhttp3.Call
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.io.OutputStream
 import java.util.concurrent.TimeUnit
@@ -38,6 +42,8 @@ import java.util.concurrent.TimeUnit
  * Descargas en segundo plano (ForegroundService + OkHttp).
  *  - Una a la vez, en cola; notificación de progreso con botón Cancelar.
  *  - Se pide el archivo por partes (Range, 10 MB) porque YouTube limita las descargas de un solo golpe.
+ *  - Según el tipo: se guarda tal cual, o se descarga a caché, se reempaqueta (WebM Opus -> .opus,
+ *    video H.264 + audio AAC -> MP4) y se guarda.
  *  - Se guarda con MediaStore en la carpeta pública Descargas: no necesita permisos de almacenamiento
  *    y aparece en el gestor de archivos.
  */
@@ -138,40 +144,57 @@ class DownloadService : Service() {
     private fun download(request: DownloadRequest) {
         cancelled = false
         val displayName = request.displayName
-        val resolver = contentResolver
-        var uri: Uri? = null
+        val temps = mutableListOf<File>()
         try {
             notificationManager.notify(PROGRESS_ID, progressNotification(displayName, -1))
 
-            val values = ContentValues().apply {
-                put(MediaStore.Downloads.DISPLAY_NAME, displayName)
-                put(MediaStore.Downloads.MIME_TYPE, request.mimeType)
-                put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
-                put(MediaStore.Downloads.IS_PENDING, 1) // oculto hasta terminar
-            }
-            val target = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
-                ?: throw IOException(getString(R.string.dl_err_create))
-            uri = target
+            // Se usa el tipo MIME que Android asocia a la extensión: así MediaStore no renombra el archivo
+            val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(request.extension)
+                ?: request.mimeType
 
-            val stream = resolver.openOutputStream(target)
-                ?: throw IOException(getString(R.string.dl_err_create))
-            stream.use { copyInChunks(request.url, it, displayName) }
+            val uri: Uri = when (request.postProcess) {
+                PostProcess.NONE ->
+                    saveToStore(displayName, mime) { out ->
+                        copyInChunks(request.url, out, displayName, 0, 100)
+                    }
 
-            resolver.update(
-                target,
-                ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) },
-                null, null
-            )
-            notifyDone(displayName, target, request.mimeType)
-            toast(getString(R.string.dl_done_toast, displayName))
-        } catch (e: Exception) {
-            // Archivo a medias: se borra
-            uri?.let {
-                try {
-                    resolver.delete(it, null, null)
-                } catch (_: Exception) {
+                PostProcess.OPUS_REMUX -> {
+                    val source = tempFile("src").also { temps += it }
+                    FileOutputStream(source).use { copyInChunks(request.url, it, displayName, 0, 85) }
+
+                    showProcessing(displayName)
+                    val converted = tempFile("opus").also { temps += it }
+                    // Si el reempaquetado falla en este dispositivo, se guarda el audio tal cual con extensión .opus
+                    val finalFile = try {
+                        MediaRemuxer.webmOpusToOgg(source, converted)
+                        converted
+                    } catch (e: Exception) {
+                        if (cancelled) throw e
+                        source
+                    }
+                    saveToStore(displayName, mime) { out -> copyFile(finalFile, out) }
+                }
+
+                PostProcess.MERGE_MP4 -> {
+                    val audioUrl = request.audioUrl ?: throw IOException(getString(R.string.dl_err_audio))
+                    val videoPart = tempFile("v").also { temps += it }
+                    val audioPart = tempFile("a").also { temps += it }
+                    FileOutputStream(videoPart).use { copyInChunks(request.url, it, displayName, 0, 75) }
+                    FileOutputStream(audioPart).use { copyInChunks(audioUrl, it, displayName, 75, 15) }
+
+                    showProcessing(displayName)
+                    val merged = tempFile("mp4").also { temps += it }
+                    MediaRemuxer.mergeToMp4(videoPart, audioPart, merged)
+                    // Se libera espacio antes de copiar al almacenamiento público
+                    videoPart.delete()
+                    audioPart.delete()
+                    saveToStore(displayName, mime) { out -> copyFile(merged, out) }
                 }
             }
+
+            notifyDone(displayName, uri, mime)
+            toast(getString(R.string.dl_done_toast, displayName))
+        } catch (e: Exception) {
             if (cancelled) {
                 toast(getString(R.string.dl_cancelled))
             } else {
@@ -180,12 +203,47 @@ class DownloadService : Service() {
                 toast(getString(R.string.dl_failed_toast, reason))
             }
         } finally {
+            temps.forEach { it.delete() }
             currentCall = null
         }
     }
 
-    /** Descarga por partes con Range y progreso. Lanza IOException si algo falla. */
-    private fun copyInChunks(url: String, out: OutputStream, displayName: String) {
+    /** Crea el archivo en Descargas (MediaStore), lo rellena con [write] y lo hace visible. */
+    private fun saveToStore(displayName: String, mime: String, write: (OutputStream) -> Unit): Uri {
+        val resolver = contentResolver
+        val values = ContentValues().apply {
+            put(MediaStore.Downloads.DISPLAY_NAME, displayName)
+            put(MediaStore.Downloads.MIME_TYPE, mime)
+            put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+            put(MediaStore.Downloads.IS_PENDING, 1) // oculto hasta terminar
+        }
+        val target = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+            ?: throw IOException(getString(R.string.dl_err_create))
+        try {
+            val stream = resolver.openOutputStream(target)
+                ?: throw IOException(getString(R.string.dl_err_create))
+            stream.use(write)
+            resolver.update(
+                target,
+                ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) },
+                null, null
+            )
+            return target
+        } catch (e: Exception) {
+            // Archivo a medias: se borra
+            try {
+                resolver.delete(target, null, null)
+            } catch (_: Exception) {
+            }
+            throw e
+        }
+    }
+
+    /**
+     * Descarga por partes con Range y progreso. El avance va de [base] a [base]+[span] (0–100).
+     * Lanza IOException si algo falla.
+     */
+    private fun copyInChunks(url: String, out: OutputStream, displayName: String, base: Int, span: Int) {
         val buffer = ByteArray(64 * 1024)
         var offset = 0L
         var total = -1L
@@ -230,7 +288,9 @@ class DownloadService : Service() {
                         offset += n
 
                         val now = System.currentTimeMillis()
-                        val percent = if (total > 0) (offset * 100 / total).toInt().coerceIn(0, 100) else -1
+                        val percent = if (total > 0) {
+                            (base + offset.toDouble() / total * span).toInt().coerceIn(0, 100)
+                        } else -1
                         if (percent != lastPercent && now - lastNotify > 500) {
                             lastNotify = now
                             lastPercent = percent
@@ -251,6 +311,12 @@ class DownloadService : Service() {
         }
     }
 
+    private fun copyFile(file: File, out: OutputStream) {
+        file.inputStream().use { it.copyTo(out, 64 * 1024) }
+    }
+
+    private fun tempFile(tag: String): File = File(cacheDir, "dl_${System.nanoTime()}_$tag")
+
     private fun parseTotal(contentRange: String?): Long? =
         contentRange?.substringAfterLast('/')?.toLongOrNull()
 
@@ -261,8 +327,15 @@ class DownloadService : Service() {
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
     )
 
-    /** [percent] = -1 -> indeterminado. */
-    private fun progressNotification(title: String, percent: Int): Notification {
+    private fun showProcessing(title: String) {
+        notificationManager.notify(
+            PROGRESS_ID,
+            progressNotification(title, -1, getString(R.string.dl_processing))
+        )
+    }
+
+    /** [percent] = -1 -> indeterminado. [text] reemplaza el texto por defecto. */
+    private fun progressNotification(title: String, percent: Int, text: String? = null): Notification {
         val cancelIntent = PendingIntent.getService(
             this, 1,
             Intent(this, DownloadService::class.java).setAction(ACTION_CANCEL),
@@ -272,7 +345,7 @@ class DownloadService : Service() {
             .setSmallIcon(R.drawable.ic_act_download)
             .setContentTitle(title)
             .setContentText(
-                if (percent >= 0) getString(R.string.dl_progress_pct, percent)
+                text ?: if (percent >= 0) getString(R.string.dl_progress_pct, percent)
                 else getString(R.string.dl_progress)
             )
             .setProgress(100, percent.coerceAtLeast(0), percent < 0)

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.alotube.app.data.download.DownloadChoice
 import com.alotube.app.data.download.DownloadOptions
 import com.alotube.app.data.download.DownloadRequest
+import com.alotube.app.data.download.PostProcess
 import com.alotube.app.data.repository.StreamRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -79,11 +80,23 @@ class DownloadViewModel(
     fun buildRequest(): DownloadRequest? {
         val s = _state.value
         val choice = s.selectedChoice ?: return null
+
+        // Video sin audio: se une con la mejor pista m4a (la del idioma elegido, o cualquiera)
+        var audioUrl: String? = null
+        if (choice.postProcess == PostProcess.MERGE_MP4) {
+            val tracks = s.options?.audioTracks.orEmpty()
+            audioUrl = tracks.getOrNull(s.trackIndex)?.streams?.firstOrNull { it.extension == "m4a" }?.url
+                ?: tracks.firstNotNullOfOrNull { t -> t.streams.firstOrNull { it.extension == "m4a" }?.url }
+            if (audioUrl == null) return null
+        }
+
         return DownloadRequest(
             url = choice.url,
             name = sanitize(s.fileName, choice.extension),
             extension = choice.extension,
-            mimeType = choice.mimeType
+            mimeType = choice.mimeType,
+            audioUrl = audioUrl,
+            postProcess = choice.postProcess
         )
     }
 

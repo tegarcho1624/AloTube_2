@@ -93,4 +93,6 @@
     <string name="dl_err_create">No se pudo crear el archivo en Descargas</string>
     <string name="dl_err_empty">Respuesta vacía del servidor</string>
     <string name="dl_err_range">El servidor no admite descarga por partes</string>
+    <string name="dl_processing">Procesando archivo…</string>
+    <string name="dl_err_audio">No se encontró una pista de audio compatible para unir con el video</string>
 </resources>

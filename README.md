@@ -55,3 +55,7 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 - `DownloadDialog` (nombre, Video/Audio, formato y calidad, idioma de audio) con los formatos reales de StreamInfo.
 - `DownloadService` (ForegroundService + OkHttp, descarga por partes con Range, notificación con progreso y botón Cancelar).
 - Se guarda en Descargas con MediaStore (minSdk 29: sin permisos de almacenamiento).
+
+## Fase 9B: más calidades y audio .opus
+- Video: además de los progresivos (360p), MP4 H.264 hasta 1080p (video + audio m4a unidos con MediaMuxer, sin FFmpeg).
+- Audio: Opus de WebM se reempaqueta como Ogg Opus (.opus). Nunca se ofrece .webm.

@@ -47,6 +47,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alotube.app.R
+import com.alotube.app.data.download.PostProcess
 import com.alotube.app.download.DownloadService
 import com.alotube.app.ui.theme.AloColors
 import com.alotube.app.ui.theme.accents
@@ -171,6 +172,17 @@ fun DownloadDialog(
                                 selectedIndex = state.videoIndex,
                                 onSelect = viewModel::selectVideo
                             )
+                            // Si el video se une con un audio aparte, se puede elegir el idioma
+                            val mergeTracks = options?.audioTracks.orEmpty()
+                            if (state.selectedChoice?.postProcess == PostProcess.MERGE_MP4 && mergeTracks.size > 1) {
+                                Spacer(Modifier.height(10.dp))
+                                DropdownField(
+                                    label = stringResource(R.string.dl_language),
+                                    options = mergeTracks.map { it.label },
+                                    selectedIndex = state.trackIndex,
+                                    onSelect = viewModel::selectTrack
+                                )
+                            }
                         } else {
                             val tracks = options?.audioTracks.orEmpty()
                             // El idioma solo se muestra si el video tiene varias pistas

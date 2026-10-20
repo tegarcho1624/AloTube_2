@@ -3,6 +3,7 @@ package com.alotube.app.data.repository
 import com.alotube.app.data.download.AudioTrackOption
 import com.alotube.app.data.download.DownloadChoice
 import com.alotube.app.data.download.DownloadOptions
+import com.alotube.app.data.download.PostProcess
 import com.alotube.app.data.model.PlayableVideo
 import com.alotube.app.data.model.PlaybackOption
 import kotlinx.coroutines.CancellationException
@@ -192,19 +193,7 @@ class StreamRepository {
     }
 
     private fun RawStreams.toDownloadOptions(): DownloadOptions {
-        val videos = video
-            .filter { it.usable() && it.height > 0 }
-            .sortedByDescending { it.height }
-            .map {
-                val fmt = it.format
-                DownloadChoice(
-                    label = "${fmt?.name ?: "Video"} ${it.resolution ?: "${it.height}p"}",
-                    url = it.content,
-                    extension = fmt?.suffix ?: "mp4",
-                    mimeType = fmt?.mimeType ?: "video/mp4"
-                )
-            }
-
+        // ---- Audio por pistas (idioma) ----
         val tracks = audio
             .filter { it.usable() }
             .groupBy { it.audioTrackId ?: it.audioLocale?.toLanguageTag() ?: "default" }
@@ -213,20 +202,81 @@ class StreamRepository {
                 AudioTrackOption(
                     label = trackLabel(first),
                     streams = group.sortedByDescending { it.averageBitrate }.map {
-                        val fmt = it.format
+                        val suffix = it.format?.suffix
                         val kbps = if (it.averageBitrate > 0) "${it.averageBitrate}kbps" else ""
-                        DownloadChoice(
-                            label = "${fmt?.name ?: "audio"} $kbps".trim(),
-                            url = it.content,
-                            extension = fmt?.suffix ?: "m4a",
-                            mimeType = fmt?.mimeType ?: "audio/mp4"
-                        )
+                        if (suffix == "webm") {
+                            // Opus dentro de WebM: se entrega como .opus (Ogg Opus), nunca como .webm
+                            DownloadChoice(
+                                label = "opus $kbps".trim(),
+                                url = it.content,
+                                extension = "opus",
+                                mimeType = "audio/ogg",
+                                postProcess = PostProcess.OPUS_REMUX
+                            )
+                        } else {
+                            DownloadChoice(
+                                label = "${suffix ?: "m4a"} $kbps".trim(),
+                                url = it.content,
+                                extension = suffix ?: "m4a",
+                                mimeType = it.format?.mimeType ?: "audio/mp4"
+                            )
+                        }
                     }
                 ) to (first.audioTrackType == AudioTrackType.ORIGINAL || first.audioTrackType == null)
             }
             // La pista original primero
             .sortedByDescending { it.second }
             .map { it.first }
+
+        // ---- Video ----
+        // 1) Progresivos: ya traen audio (normalmente solo 360p)
+        val progressive = video
+            .filter { it.usable() && it.height > 0 }
+            .map {
+                val fmt = it.format
+                Triple(
+                    it.height, it.fps,
+                    DownloadChoice(
+                        label = "${fmt?.name ?: "Video"} ${it.resolution ?: "${it.height}p"}",
+                        url = it.content,
+                        extension = fmt?.suffix ?: "mp4",
+                        mimeType = fmt?.mimeType ?: "video/mp4"
+                    )
+                )
+            }
+
+        // 2) H.264 (MP4) sin audio, hasta 1080p: se une con el audio AAC (m4a) en un MP4.
+        //    Solo si hay audio m4a disponible.
+        val hasAac = tracks.any { track -> track.streams.any { it.extension == "m4a" } }
+        val adaptive = if (!hasAac) emptyList() else videoOnly
+            .filter {
+                it.usable() && it.height > 0 &&
+                    it.format == MediaFormat.MPEG_4 && it.codec?.startsWith("avc1") == true
+            }
+            .groupBy { it.height to (it.fps > 30) }
+            .mapNotNull { (_, group) -> group.maxByOrNull { it.bitrate } }
+            // Si ya hay uno progresivo de la misma resolución, se deja ese (no necesita unir)
+            .filter { a -> progressive.none { it.first == a.height && (it.second > 30) == (a.fps > 30) } }
+            .map {
+                val res = if (it.fps > 30) "${it.height}p${it.fps}" else "${it.height}p"
+                Triple(
+                    it.height, it.fps,
+                    DownloadChoice(
+                        label = "MPEG-4 $res",
+                        url = it.content,
+                        extension = "mp4",
+                        mimeType = "video/mp4",
+                        postProcess = PostProcess.MERGE_MP4
+                    )
+                )
+            }
+
+        val videos = (progressive + adaptive)
+            .sortedWith(
+                compareByDescending<Triple<Int, Int, DownloadChoice>> { it.first }
+                    .thenByDescending { it.second }
+            )
+            .map { it.third }
 
         return DownloadOptions(videos, tracks)
     }
