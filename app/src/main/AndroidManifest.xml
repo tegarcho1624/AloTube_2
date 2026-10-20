@@ -5,6 +5,8 @@
     <!-- Reproducción en segundo plano con notificación multimedia -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- Descargas en segundo plano (ForegroundService tipo dataSync). Guardar con MediaStore no requiere permisos de almacenamiento -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <!-- Android 13+: sin él la reproducción funciona, pero no se ve la notificación -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Mantiene CPU/Wi-Fi activos con la pantalla apagada mientras suena -->
@@ -43,6 +45,12 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|keyboard|keyboardHidden|navigation|uiMode" />
+
+        <!-- Descargas: una a la vez, con notificación de progreso -->
+        <service
+            android:name=".download.DownloadService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <!-- stopWithTask=false: así onTaskRemoved se ejecuta y detiene el servicio de forma limpia -->
         <service

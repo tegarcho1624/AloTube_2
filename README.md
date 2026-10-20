@@ -50,3 +50,8 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 ## Fase 8: cuadrícula y pantalla de reproducción
 - `VideoGrid` (LazyVerticalGrid, 2 columnas en tablet) y tarjeta `VideoListItem` (Card, duración, título 2 líneas, canal, vistas · fecha).
 - `PlayerScreen`: video arriba + `WatchInfo` (título, canal, vistas, fecha, likes) + `VideoActionBar` (Agregar, Fondo, Emergente, Compartir, Reproductor de música, Descargar).
+
+## Fase 9A: descargas
+- `DownloadDialog` (nombre, Video/Audio, formato y calidad, idioma de audio) con los formatos reales de StreamInfo.
+- `DownloadService` (ForegroundService + OkHttp, descarga por partes con Range, notificación con progreso y botón Cancelar).
+- Se guarda en Descargas con MediaStore (minSdk 29: sin permisos de almacenamiento).

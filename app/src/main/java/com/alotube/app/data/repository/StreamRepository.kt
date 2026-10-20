@@ -1,5 +1,8 @@
 package com.alotube.app.data.repository
 
+import com.alotube.app.data.download.AudioTrackOption
+import com.alotube.app.data.download.DownloadChoice
+import com.alotube.app.data.download.DownloadOptions
 import com.alotube.app.data.model.PlayableVideo
 import com.alotube.app.data.model.PlaybackOption
 import kotlinx.coroutines.CancellationException
@@ -16,6 +19,7 @@ import org.schabi.newpipe.extractor.stream.StreamInfo
 import org.schabi.newpipe.extractor.stream.StreamType
 import org.schabi.newpipe.extractor.stream.VideoStream
 import java.io.IOException
+import java.util.Locale
 
 /**
  * Fallo al obtener streams tras todos los intentos.
@@ -83,6 +87,31 @@ class StreamRepository {
 
         val header = "NewPipeExtractor $EXTRACTOR_VERSION · cliente de YouTube: interno (lo elige el extractor)"
         Result.failure(StreamFetchException(header + "\n" + log.joinToString("\n"), lastError))
+    }
+
+    /**
+     * Formatos descargables del video: progresivos (video+audio juntos) y pistas de audio.
+     * Usa los mismos caminos que la reproducción (StreamInfo y, si falla, StreamExtractor).
+     */
+    suspend fun getDownloadOptions(url: String): Result<DownloadOptions> = withContext(Dispatchers.IO) {
+        val sources: List<() -> RawStreams> = listOf(
+            { fetchViaStreamInfo(url) },
+            { fetchViaExtractor(url) }
+        )
+        var last: Throwable? = null
+        for (fetch in sources) {
+            try {
+                val options = fetch().toDownloadOptions()
+                if (options.videoChoices.isNotEmpty() || options.audioTracks.isNotEmpty()) {
+                    return@withContext Result.success(options)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                last = e
+            }
+        }
+        Result.failure(last ?: IOException("No hay formatos descargables"))
     }
 
     // ---------- Fuentes de datos ----------
@@ -160,6 +189,59 @@ class StreamRepository {
             else -> emptyList()
         }
         return PlayableVideo(title, author, options, muxed ?: manifest, viewCount, likeCount, uploadDate)
+    }
+
+    private fun RawStreams.toDownloadOptions(): DownloadOptions {
+        val videos = video
+            .filter { it.usable() && it.height > 0 }
+            .sortedByDescending { it.height }
+            .map {
+                val fmt = it.format
+                DownloadChoice(
+                    label = "${fmt?.name ?: "Video"} ${it.resolution ?: "${it.height}p"}",
+                    url = it.content,
+                    extension = fmt?.suffix ?: "mp4",
+                    mimeType = fmt?.mimeType ?: "video/mp4"
+                )
+            }
+
+        val tracks = audio
+            .filter { it.usable() }
+            .groupBy { it.audioTrackId ?: it.audioLocale?.toLanguageTag() ?: "default" }
+            .map { (_, group) ->
+                val first = group.first()
+                AudioTrackOption(
+                    label = trackLabel(first),
+                    streams = group.sortedByDescending { it.averageBitrate }.map {
+                        val fmt = it.format
+                        val kbps = if (it.averageBitrate > 0) "${it.averageBitrate}kbps" else ""
+                        DownloadChoice(
+                            label = "${fmt?.name ?: "audio"} $kbps".trim(),
+                            url = it.content,
+                            extension = fmt?.suffix ?: "m4a",
+                            mimeType = fmt?.mimeType ?: "audio/mp4"
+                        )
+                    }
+                ) to (first.audioTrackType == AudioTrackType.ORIGINAL || first.audioTrackType == null)
+            }
+            // La pista original primero
+            .sortedByDescending { it.second }
+            .map { it.first }
+
+        return DownloadOptions(videos, tracks)
+    }
+
+    private fun trackLabel(stream: AudioStream): String {
+        val language = stream.audioLocale?.getDisplayLanguage(Locale("es"))?.takeIf { it.isNotBlank() }
+            ?: stream.audioTrackName?.takeIf { it.isNotBlank() }
+            ?: "Predeterminado"
+        val kind = when (stream.audioTrackType) {
+            AudioTrackType.ORIGINAL -> " (original)"
+            AudioTrackType.DUBBED -> " (doblado)"
+            AudioTrackType.DESCRIPTIVE -> " (audiodescripción)"
+            else -> ""
+        }
+        return language + kind
     }
 
     private fun RawStreams.summary(): String =

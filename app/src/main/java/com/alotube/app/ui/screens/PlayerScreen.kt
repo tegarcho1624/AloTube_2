@@ -56,6 +56,7 @@ import com.alotube.app.R
 import com.alotube.app.data.model.PlaybackOption
 import com.alotube.app.player.applyAloStyle
 import com.alotube.app.ui.components.ActionSpec
+import com.alotube.app.ui.components.DownloadDialog
 import com.alotube.app.ui.components.WatchInfo
 import com.alotube.app.ui.theme.accents
 import com.alotube.app.util.formatCount
@@ -94,6 +95,7 @@ fun PlayerScreen(
     val ctx = LocalContext.current
     val controlsVisible = remember { mutableStateOf(true) }
     var isFullscreen by remember { mutableStateOf(false) }
+    var showDownload by remember { mutableStateOf(false) }
     val error = state.error
     val cs = MaterialTheme.colorScheme
     val accents = MaterialTheme.accents
@@ -135,7 +137,9 @@ fun PlayerScreen(
         },
         ActionSpec(R.drawable.ic_act_share, R.string.act_share, true) { share() },
         ActionSpec(R.drawable.ic_act_music, R.string.act_music, false) { soon() },
-        ActionSpec(R.drawable.ic_act_download, R.string.act_download, false) { soon() }
+        ActionSpec(R.drawable.ic_act_download, R.string.act_download, true) {
+            if (state.url.isNotBlank()) showDownload = true else soon()
+        }
     )
 
     BoxWithConstraints(
@@ -299,6 +303,14 @@ fun PlayerScreen(
                     modifier = Modifier.weight(1f)
                 )
             }
+        }
+
+        if (showDownload) {
+            DownloadDialog(
+                url = state.url,
+                title = state.title,
+                onDismiss = { showDownload = false }
+            )
         }
     }
 }

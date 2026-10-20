@@ -10,10 +10,11 @@ android {
 
     defaultConfig {
         applicationId = "com.alotube.app"
-        minSdk = 26 // con 26+ NewPipeExtractor no necesita desugaring
+        // 29: permite guardar descargas con MediaStore sin pedir permisos de almacenamiento
+        minSdk = 29
         targetSdk = 34
-        versionCode = 8
-        versionName = "2.0.0-fase8"
+        versionCode = 9
+        versionName = "2.0.0-fase9a"
     }
 
     buildTypes {

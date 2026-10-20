@@ -71,4 +71,26 @@
     <string name="act_download">Descargar</string>
     <string name="soon_toast">Próximamente</string>
     <string name="pip_unavailable">La imagen en imagen no está disponible en este dispositivo</string>
+    <string name="dl_title">Descargar</string>
+    <string name="dl_file_name">Nombre del archivo</string>
+    <string name="dl_video">Video</string>
+    <string name="dl_audio">Audio</string>
+    <string name="dl_format">Formato y calidad</string>
+    <string name="dl_language">Idioma de audio</string>
+    <string name="dl_ok">OK</string>
+    <string name="dl_cancel">Cancelar</string>
+    <string name="dl_no_video">Este video no ofrece un formato con video y audio juntos, así que solo se puede descargar el audio.</string>
+    <string name="dl_error">No se pudieron obtener los formatos del video.</string>
+    <string name="dl_started">Descarga iniciada</string>
+    <string name="dl_channel">Descargas</string>
+    <string name="dl_progress">Descargando…</string>
+    <string name="dl_progress_pct">Descargando… %1$d%%</string>
+    <string name="dl_done">Descarga completa. Toca para abrir.</string>
+    <string name="dl_done_toast">Descargado en Descargas: %1$s</string>
+    <string name="dl_failed">Descarga fallida</string>
+    <string name="dl_failed_toast">No se pudo descargar: %1$s</string>
+    <string name="dl_cancelled">Descarga cancelada</string>
+    <string name="dl_err_create">No se pudo crear el archivo en Descargas</string>
+    <string name="dl_err_empty">Respuesta vacía del servidor</string>
+    <string name="dl_err_range">El servidor no admite descarga por partes</string>
 </resources>
