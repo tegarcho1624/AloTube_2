@@ -32,7 +32,10 @@ private data class RawStreams(
     val videoOnly: List<VideoStream>,
     val audio: List<AudioStream>,
     val hls: String?,
-    val dash: String?
+    val dash: String?,
+    val viewCount: Long = -1L,
+    val likeCount: Long = -1L,
+    val uploadDate: String? = null
 )
 
 /**
@@ -94,7 +97,10 @@ class StreamRepository {
             videoOnly = info.videoOnlyStreams.orEmpty(),
             audio = info.audioStreams.orEmpty(),
             hls = info.hlsUrl.nullIfEmpty(),
-            dash = info.dashMpdUrl.nullIfEmpty()
+            dash = info.dashMpdUrl.nullIfEmpty(),
+            viewCount = info.viewCount,
+            likeCount = info.likeCount,
+            uploadDate = info.textualUploadDate.nullIfEmpty()
         )
     }
 
@@ -115,7 +121,10 @@ class StreamRepository {
             videoOnly = safe(emptyList<VideoStream>()) { extractor.videoOnlyStreams.orEmpty() },
             audio = safe(emptyList<AudioStream>()) { extractor.audioStreams.orEmpty() },
             hls = safe<String?>(null) { extractor.hlsUrl }.nullIfEmpty(),
-            dash = safe<String?>(null) { extractor.dashMpdUrl }.nullIfEmpty()
+            dash = safe<String?>(null) { extractor.dashMpdUrl }.nullIfEmpty(),
+            viewCount = safe(-1L) { extractor.viewCount },
+            likeCount = safe(-1L) { extractor.likeCount },
+            uploadDate = safe<String?>(null) { extractor.textualUploadDate }.nullIfEmpty()
         )
     }
 
@@ -132,7 +141,7 @@ class StreamRepository {
 
         // Directos: solo manifiesto
         if (isLive && manifest != null) {
-            return PlayableVideo(title, author, listOf(manifest), null)
+            return PlayableVideo(title, author, listOf(manifest), null, viewCount, likeCount, uploadDate)
         }
 
         val bestAudio = pickAudio(audio)
@@ -150,7 +159,7 @@ class StreamRepository {
             manifest != null -> listOf(manifest)
             else -> emptyList()
         }
-        return PlayableVideo(title, author, options, muxed ?: manifest)
+        return PlayableVideo(title, author, options, muxed ?: manifest, viewCount, likeCount, uploadDate)
     }
 
     private fun RawStreams.summary(): String =

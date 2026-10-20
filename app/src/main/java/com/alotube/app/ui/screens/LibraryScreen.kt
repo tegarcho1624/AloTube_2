@@ -55,7 +55,7 @@ import com.alotube.app.data.library.LibraryPlaylist
 import com.alotube.app.data.library.LibraryRepository
 import com.alotube.app.data.model.VideoItem
 import com.alotube.app.ui.components.StatusMessage
-import com.alotube.app.ui.components.VideoListItem
+import com.alotube.app.ui.components.VideoGrid
 import com.alotube.app.ui.theme.AloColors
 import com.alotube.app.ui.theme.accents
 import com.alotube.app.viewmodel.LibraryViewModel
@@ -221,18 +221,7 @@ private fun PlaylistDetailScreen(
                             modifier = Modifier.align(Alignment.Center)
                         )
                     } else {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(18.dp)
-                        ) {
-                            itemsIndexed(videos.items) { index, video ->
-                                VideoListItem(
-                                    video = video,
-                                    onClick = { onVideoClick(videos.items, index) }
-                                )
-                            }
-                        }
+                        VideoGrid(videos = videos.items, onVideoClick = onVideoClick)
                     }
             }
         }

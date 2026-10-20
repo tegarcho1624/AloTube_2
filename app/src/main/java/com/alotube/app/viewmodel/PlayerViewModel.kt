@@ -37,6 +37,10 @@ data class PlayerUiState(
     val title: String = "",
     val author: String = "",
     val thumbnailUrl: String? = null,
+    val url: String = "",
+    val viewCount: Long = -1L,
+    val likeCount: Long = -1L,
+    val uploadDate: String? = null,
     val isLoading: Boolean = true,
     /** Calidades del menú (de mayor a menor). */
     val options: List<PlaybackOption> = emptyList(),
@@ -64,22 +68,37 @@ class PlayerViewModel(
         // Siguiente/Anterior (notificación, bloqueo, botones) solo mueven la cola: aquí se carga el video
         viewModelScope.launch {
             PlaybackQueue.state.collect { queue ->
-                queue.current?.let { load(it.url, it.title, it.author, it.thumbnailUrl) }
+                queue.current?.let { load(it.url, it.title, it.author, it.thumbnailUrl, it.viewCount, it.uploadDateText) }
             }
         }
     }
 
     /** Idempotente: si ya se cargó esta URL, no hace nada. */
-    fun load(url: String, title: String, author: String = "", thumbnailUrl: String? = null) {
+    fun load(
+        url: String,
+        title: String,
+        author: String = "",
+        thumbnailUrl: String? = null,
+        viewCount: Long = -1L,
+        uploadDate: String? = null
+    ) {
         if (videoUrl == url) return
         videoUrl = url
-        _state.value = PlayerUiState(title = title, author = author, thumbnailUrl = thumbnailUrl)
+        _state.value = PlayerUiState(
+            title = title, author = author, thumbnailUrl = thumbnailUrl,
+            url = url, viewCount = viewCount, uploadDate = uploadDate
+        )
         fetch()
     }
 
     /** Vuelve a pedir los enlaces (sirve también cuando un enlace caducó). */
     fun retry() {
-        _state.update { PlayerUiState(title = it.title, author = it.author, thumbnailUrl = it.thumbnailUrl) }
+        _state.update {
+            PlayerUiState(
+                title = it.title, author = it.author, thumbnailUrl = it.thumbnailUrl,
+                url = it.url, viewCount = it.viewCount, uploadDate = it.uploadDate
+            )
+        }
         fetch()
     }
 
@@ -139,6 +158,9 @@ class PlayerViewModel(
                             it.copy(
                                 title = video.title.ifBlank { it.title },
                                 author = video.author.ifBlank { it.author },
+                                viewCount = if (video.viewCount >= 0) video.viewCount else it.viewCount,
+                                likeCount = video.likeCount,
+                                uploadDate = video.uploadDate ?: it.uploadDate,
                                 isLoading = false,
                                 options = video.options,
                                 fallback = video.fallback,

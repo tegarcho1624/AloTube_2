@@ -25,7 +25,7 @@ import com.alotube.app.data.model.VideoItem
 import com.alotube.app.ui.components.AloTubeHeader
 import com.alotube.app.ui.components.SearchTopBar
 import com.alotube.app.ui.components.StatusMessage
-import com.alotube.app.ui.components.VideoListItem
+import com.alotube.app.ui.components.VideoGrid
 import com.alotube.app.ui.theme.accents
 import com.alotube.app.viewmodel.SearchError
 import com.alotube.app.viewmodel.SearchViewModel
@@ -91,15 +91,7 @@ fun MainScreen(
                     modifier = Modifier.align(Alignment.Center)
                 )
 
-                else -> LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(18.dp)
-                ) {
-                    itemsIndexed(results) { index, video ->
-                        VideoListItem(video = video, onClick = { onVideoClick(results, index) })
-                    }
-                }
+                else -> VideoGrid(videos = results, onVideoClick = onVideoClick)
             }
         }
     }

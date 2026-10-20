@@ -32,6 +32,8 @@ class VideoRepository {
         author = uploaderName ?: "",
         durationSeconds = duration,
         thumbnailUrl = thumbnails.lastOrNull()?.url,
-        isLive = streamType == StreamType.LIVE_STREAM
+        isLive = streamType == StreamType.LIVE_STREAM,
+        viewCount = viewCount,
+        uploadDateText = textualUploadDate?.takeIf { it.isNotBlank() }
     )
 }

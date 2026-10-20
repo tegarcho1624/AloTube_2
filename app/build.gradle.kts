@@ -12,8 +12,8 @@ android {
         applicationId = "com.alotube.app"
         minSdk = 26 // con 26+ NewPipeExtractor no necesita desugaring
         targetSdk = 34
-        versionCode = 7
-        versionName = "2.0.0-fase7"
+        versionCode = 8
+        versionName = "2.0.0-fase8"
     }
 
     buildTypes {

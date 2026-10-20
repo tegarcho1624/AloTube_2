@@ -63,4 +63,12 @@
     <string name="lib_unavailable">No disponible</string>
     <string name="lib_expired">La sesión de Google caducó. Ve a Ajustes, cierra sesión y vuelve a iniciarla.</string>
     <string name="lib_back">Volver</string>
+    <string name="act_add">Agregar</string>
+    <string name="act_background">Fondo</string>
+    <string name="act_popup">Emergente</string>
+    <string name="act_share">Compartir</string>
+    <string name="act_music">Reproductor de música</string>
+    <string name="act_download">Descargar</string>
+    <string name="soon_toast">Próximamente</string>
+    <string name="pip_unavailable">La imagen en imagen no está disponible en este dispositivo</string>
 </resources>

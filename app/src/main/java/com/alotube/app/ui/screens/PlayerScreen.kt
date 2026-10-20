@@ -2,15 +2,20 @@
 
 package com.alotube.app.ui.screens
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.view.View
+import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
@@ -37,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,7 +55,11 @@ import androidx.media3.ui.PlayerView
 import com.alotube.app.R
 import com.alotube.app.data.model.PlaybackOption
 import com.alotube.app.player.applyAloStyle
+import com.alotube.app.ui.components.ActionSpec
+import com.alotube.app.ui.components.WatchInfo
 import com.alotube.app.ui.theme.accents
+import com.alotube.app.util.formatCount
+import com.alotube.app.util.formatViews
 import com.alotube.app.viewmodel.PlayerError
 import com.alotube.app.viewmodel.PlayerUiState
 
@@ -64,6 +74,12 @@ private fun PlayerError.messageRes(): Int = when (this) {
     PlayerError.UNKNOWN -> R.string.perr_unknown
 }
 
+/**
+ * Pantalla de reproducción. Normal: video arriba (16:9, máx. 55 % de la altura) + información y
+ * acciones debajo. Pantalla completa, PiP o error: el área de video ocupa todo.
+ * El PlayerView es siempre el primer hijo de la misma Column: al cambiar de modo solo cambia su
+ * tamaño, no se recrea (así no se pierde el estado del botón de pantalla completa).
+ */
 @Composable
 fun PlayerScreen(
     exoPlayer: Player,
@@ -75,7 +91,9 @@ fun PlayerScreen(
     onFullscreenToggle: (Boolean) -> Unit,
     onEnterPip: (() -> Unit)?
 ) {
+    val ctx = LocalContext.current
     val controlsVisible = remember { mutableStateOf(true) }
+    var isFullscreen by remember { mutableStateOf(false) }
     val error = state.error
     val cs = MaterialTheme.colorScheme
     val accents = MaterialTheme.accents
@@ -85,136 +103,201 @@ fun PlayerScreen(
     val mutedInt = cs.onSurfaceVariant.toArgb()
     val bgInt = cs.background.toArgb()
 
-    Box(
+    // ---- Acciones (solo visuales, salvo Emergente y Compartir) ----
+    fun soon() {
+        Toast.makeText(ctx, R.string.soon_toast, Toast.LENGTH_SHORT).show()
+    }
+
+    fun share() {
+        val text = listOf(state.title, state.url).filter { it.isNotBlank() }.joinToString("\n")
+        if (text.isBlank()) return
+        try {
+            ctx.startActivity(
+                Intent.createChooser(
+                    Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, text)
+                    },
+                    null
+                )
+            )
+        } catch (_: ActivityNotFoundException) {
+            // Sin apps para compartir: no pasa nada
+        }
+    }
+
+    val actions = listOf(
+        ActionSpec(R.drawable.ic_act_playlist_add, R.string.act_add, false) { soon() },
+        ActionSpec(R.drawable.ic_act_headphones, R.string.act_background, false) { soon() },
+        ActionSpec(R.drawable.ic_act_pip, R.string.act_popup, true) {
+            if (onEnterPip != null) onEnterPip()
+            else Toast.makeText(ctx, R.string.pip_unavailable, Toast.LENGTH_SHORT).show()
+        },
+        ActionSpec(R.drawable.ic_act_share, R.string.act_share, true) { share() },
+        ActionSpec(R.drawable.ic_act_music, R.string.act_music, false) { soon() },
+        ActionSpec(R.drawable.ic_act_download, R.string.act_download, false) { soon() }
+    )
+
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(cs.background)
     ) {
-        if (error != null) {
-            Column(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .verticalScroll(rememberScrollState())
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = stringResource(error.messageRes()),
-                    color = cs.onBackground,
-                    textAlign = TextAlign.Center
-                )
-                // Detalle técnico para diagnosticar (intentos, excepción, cliente...)
-                if (!inPip && !state.errorDetail.isNullOrBlank()) {
-                    Text(
-                        text = state.errorDetail,
-                        color = cs.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(top = 12.dp)
-                    )
-                }
-                if (!inPip) {
-                    Row(
-                        modifier = Modifier.padding(top = 20.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Button(onClick = onBack) { Text(stringResource(R.string.back)) }
-                        OutlinedButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
-                    }
-                }
-            }
-        } else {
-            AndroidView(
-                modifier = Modifier.fillMaxSize(),
-                factory = { ctx ->
-                    PlayerView(ctx).apply {
-                        player = exoPlayer
-                        applyAloStyle(accentInt, accentHiInt, inkInt, mutedInt, bgInt)
-                        resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-                        setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
-                        setFullscreenButtonClickListener(
-                            PlayerView.FullscreenButtonClickListener { isFullScreen ->
-                                onFullscreenToggle(isFullScreen)
-                            }
-                        )
-                        setControllerVisibilityListener(
-                            PlayerView.ControllerVisibilityListener { visibility ->
-                                controlsVisible.value = visibility == View.VISIBLE
-                            }
-                        )
-                    }
-                },
-                update = { it.useController = !inPip },
-                onRelease = { it.player = null }
-            )
+        val expanded = isFullscreen || inPip || error != null
+        val videoHeight = minOf(maxWidth * 9f / 16f, maxHeight * 0.55f)
 
-            if (state.isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center),
-                    color = accents.accent
-                )
-            }
-
-            if (controlsVisible.value && !inPip) {
-                var menuOpen by remember { mutableStateOf(false) }
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
+        Column(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = if (expanded) {
+                    Modifier.fillMaxSize()
+                } else {
+                    Modifier
                         .fillMaxWidth()
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(Color.Black.copy(alpha = 0.6f), Color.Transparent)
+                        .height(videoHeight)
+                        .background(Color.Black)
+                }
+            ) {
+                if (error != null) {
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .verticalScroll(rememberScrollState())
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = stringResource(error.messageRes()),
+                            color = cs.onBackground,
+                            textAlign = TextAlign.Center
+                        )
+                        // Detalle técnico para diagnosticar (intentos, excepción, cliente...)
+                        if (!inPip && !state.errorDetail.isNullOrBlank()) {
+                            Text(
+                                text = state.errorDetail,
+                                color = cs.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(top = 12.dp)
                             )
-                        )
-                        .safeDrawingPadding()
-                        .padding(horizontal = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back),
-                            tint = cs.onBackground
-                        )
-                    }
-                    Text(
-                        text = state.title,
-                        color = cs.onBackground,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                    if (onEnterPip != null) {
-                        TextButton(onClick = onEnterPip) {
-                            Text(stringResource(R.string.pip), color = cs.onBackground)
+                        }
+                        if (!inPip) {
+                            Row(
+                                modifier = Modifier.padding(top = 20.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Button(onClick = onBack) { Text(stringResource(R.string.back)) }
+                                OutlinedButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+                            }
                         }
                     }
-                    if (state.options.size > 1) {
-                        Box {
-                            TextButton(onClick = { menuOpen = true }) {
-                                Text(state.current?.label ?: "", color = accents.hi)
+                } else {
+                    AndroidView(
+                        modifier = Modifier.fillMaxSize(),
+                        factory = { c ->
+                            PlayerView(c).apply {
+                                player = exoPlayer
+                                applyAloStyle(accentInt, accentHiInt, inkInt, mutedInt, bgInt)
+                                resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                                setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
+                                setFullscreenButtonClickListener(
+                                    PlayerView.FullscreenButtonClickListener { enter ->
+                                        isFullscreen = enter
+                                        onFullscreenToggle(enter)
+                                    }
+                                )
+                                setControllerVisibilityListener(
+                                    PlayerView.ControllerVisibilityListener { visibility ->
+                                        controlsVisible.value = visibility == View.VISIBLE
+                                    }
+                                )
                             }
-                            DropdownMenu(
-                                expanded = menuOpen,
-                                onDismissRequest = { menuOpen = false }
-                            ) {
-                                state.options.forEach { option ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(
-                                                if (option == state.current) "✓ ${option.label}"
-                                                else option.label
-                                            )
-                                        },
-                                        onClick = {
-                                            menuOpen = false
-                                            onSelectQuality(option)
-                                        }
+                        },
+                        update = { it.useController = !inPip },
+                        onRelease = { it.player = null }
+                    )
+
+                    if (state.isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.align(Alignment.Center),
+                            color = accents.accent
+                        )
+                    }
+
+                    if (controlsVisible.value && !inPip) {
+                        var menuOpen by remember { mutableStateOf(false) }
+                        Row(
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .fillMaxWidth()
+                                .background(
+                                    Brush.verticalGradient(
+                                        listOf(Color.Black.copy(alpha = 0.6f), Color.Transparent)
                                     )
+                                )
+                                .safeDrawingPadding()
+                                .padding(horizontal = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(onClick = onBack) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = stringResource(R.string.back),
+                                    tint = cs.onBackground
+                                )
+                            }
+                            // El título ya se muestra debajo; en pantalla completa se ve aquí
+                            Text(
+                                text = if (isFullscreen) state.title else "",
+                                color = cs.onBackground,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                            if (onEnterPip != null && isFullscreen) {
+                                TextButton(onClick = onEnterPip) {
+                                    Text(stringResource(R.string.pip), color = cs.onBackground)
+                                }
+                            }
+                            if (state.options.size > 1) {
+                                Box {
+                                    TextButton(onClick = { menuOpen = true }) {
+                                        Text(state.current?.label ?: "", color = accents.hi)
+                                    }
+                                    DropdownMenu(
+                                        expanded = menuOpen,
+                                        onDismissRequest = { menuOpen = false }
+                                    ) {
+                                        state.options.forEach { option ->
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Text(
+                                                        if (option == state.current) "✓ ${option.label}"
+                                                        else option.label
+                                                    )
+                                                },
+                                                onClick = {
+                                                    menuOpen = false
+                                                    onSelectQuality(option)
+                                                }
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
+            }
+
+            if (!expanded) {
+                WatchInfo(
+                    title = state.title,
+                    author = state.author,
+                    meta = listOfNotNull(formatViews(state.viewCount), state.uploadDate)
+                        .joinToString(" · "),
+                    likes = formatCount(state.likeCount),
+                    actions = actions,
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
     }

@@ -46,3 +46,7 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 - `data/library/InnerTubeClient`: peticiones autenticadas (cookies + SAPISIDHASH) a youtubei `browse`.
 - `LibraryRepository`: listas (FEplaylist_aggregation), suscripciones (FEchannels), videos de lista (PlaylistExtractor y, si falla, la API con sesión; "Ver después" = WL, "Me gustan" = LL).
 - `LibraryViewModel` + `LibraryScreen`: cada sección carga y falla por separado ("No disponible"), con spinner.
+
+## Fase 8: cuadrícula y pantalla de reproducción
+- `VideoGrid` (LazyVerticalGrid, 2 columnas en tablet) y tarjeta `VideoListItem` (Card, duración, título 2 líneas, canal, vistas · fecha).
+- `PlayerScreen`: video arriba + `WatchInfo` (título, canal, vistas, fecha, likes) + `VideoActionBar` (Agregar, Fondo, Emergente, Compartir, Reproductor de música, Descargar).

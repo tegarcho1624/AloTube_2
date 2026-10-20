@@ -30,5 +30,8 @@ data class PlayableVideo(
     /** Calidades para el menú, de mayor a menor. */
     val options: List<PlaybackOption>,
     /** Opción compatible (video+audio juntos) para reintentar si la principal falla. */
-    val fallback: PlaybackOption?
+    val fallback: PlaybackOption?,
+    val viewCount: Long = -1L,
+    val likeCount: Long = -1L,
+    val uploadDate: String? = null
 )
