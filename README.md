@@ -76,3 +76,7 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 - Pestañas Videos / Canales. Primero se cargan los videos; los canales se piden aparte (filtro CHANNELS del SearchExtractor).
 - Paginación (getPage) para ambos tipos; `LoadMoreEffect` en las cuadrículas.
 - Tocar un canal: Toast "Abriendo canal: [Nombre] (Próximamente)".
+
+## Pantalla de canal
+- `ChannelRepository`: ChannelExtractor (nombre, avatar, banner, suscriptores, descripción) + videos con ChannelTabExtractor (pestaña "videos") y paginación.
+- `ChannelScreen` se muestra encima de la navegación principal (estado en `AloTubeRoot`), con pestañas Inicio / Videos / Shorts / Listas.

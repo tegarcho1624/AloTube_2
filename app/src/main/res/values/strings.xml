@@ -119,4 +119,16 @@
     <string name="search_channels_error">No se pudieron cargar los canales.</string>
     <string name="channel_view">Ver canal</string>
     <string name="channel_open_soon">Abriendo canal: %1$s (Próximamente)</string>
+    <string name="ch_tab_home">Inicio</string>
+    <string name="ch_tab_videos">Videos</string>
+    <string name="ch_tab_shorts">Shorts</string>
+    <string name="ch_tab_lists">Listas</string>
+    <string name="ch_subscribe">SUSCRIBIR</string>
+    <string name="ch_background">Fondo</string>
+    <string name="ch_play_all">Reproducir todo</string>
+    <string name="ch_shuffle">Aleatorio</string>
+    <string name="ch_error">No se pudo cargar el canal.</string>
+    <string name="ch_videos_error">No se pudieron cargar los videos del canal.</string>
+    <string name="ch_no_videos">Este canal no tiene videos.</string>
+    <string name="ch_see_more">Toca para ver más.</string>
 </resources>

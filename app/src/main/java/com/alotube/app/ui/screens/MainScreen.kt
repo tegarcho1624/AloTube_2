@@ -51,6 +51,7 @@ private fun SearchError.messageRes(): Int = when (this) {
 @Composable
 fun MainScreen(
     onVideoClick: (List<VideoItem>, Int) -> Unit,
+    onChannelClick: (com.alotube.app.data.model.ChannelItem) -> Unit,
     viewModel: SearchViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -150,14 +151,7 @@ fun MainScreen(
                             ChannelsTab(
                                 state = state,
                                 onLoadMore = viewModel::loadMoreChannels,
-                                onChannelClick = { channel ->
-                                    // La pantalla del canal llega en la siguiente fase
-                                    Toast.makeText(
-                                        ctx,
-                                        ctx.getString(R.string.channel_open_soon, channel.name),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
+                                onChannelClick = onChannelClick
                             )
                         }
                     }
