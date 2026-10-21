@@ -110,4 +110,7 @@
     <string name="set_soon">Próximamente</string>
     <string name="set_more_soon">Más opciones: Próximamente</string>
     <string name="error_link">Enlace no válido o video no disponible</string>
+    <string name="accent_delete_title">¿Deseas eliminar este color?</string>
+    <string name="accent_delete_confirm">Eliminar</string>
+    <string name="accent_delete_cancel">Cancelar</string>
 </resources>

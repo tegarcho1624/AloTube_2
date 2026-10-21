@@ -67,3 +67,7 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 ## Enlaces de YouTube en el buscador
 - `YoutubeLinks` detecta youtube.com/watch, youtu.be, m./music.youtube.com, shorts, live, embed (con o sin https, también dentro de un texto).
 - Si es un enlace: spinner, StreamInfo y abre el reproductor directo; si falla: "Enlace no válido o video no disponible". Si no, búsqueda normal.
+
+## Apariencia: borrar colores propios
+- Mantener presionada una bolita de color propio abre un diálogo de confirmación; los 12 colores básicos no se pueden borrar.
+- `ThemeUtils.removeCustom`: quita el color de `accent_custom`; si era el acento activo, vuelve al dorado.

@@ -96,6 +96,23 @@ object ThemeUtils {
         prefs(ctx).edit().putString(KEY_CUSTOM, updated.joinToString(",")).apply()
     }
 
+    /**
+     * Elimina un color propio de `accent_custom`. Si ese color era el acento activo, se vuelve al
+     * dorado por defecto (borra `accent`) para no dejar la app con un color que ya no existe.
+     * Devuelve true si se restableció el acento (la UI debe recrearse para aplicarlo).
+     */
+    fun removeCustom(ctx: Context, color: Int): Boolean {
+        val hex = "%06X".format(color and 0x00FFFFFF)
+        val remaining = customColors(ctx)
+            .map { "%06X".format(it and 0x00FFFFFF) }
+            .filter { it != hex }
+        prefs(ctx).edit().putString(KEY_CUSTOM, remaining.joinToString(",")).apply()
+
+        val wasActive = (accent(ctx) and 0x00FFFFFF) == (color and 0x00FFFFFF)
+        if (wasActive) resetAccent(ctx)
+        return wasActive
+    }
+
     /** Acepta "#RRGGBB" o "RRGGBB" (exactamente 6 dígitos). Devuelve null si no es válido. */
     fun parseHex(raw: String): Int? {
         var s = raw.trim()

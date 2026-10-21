@@ -1,8 +1,9 @@
 package com.alotube.app.ui.screens.settings
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,13 +20,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -33,6 +37,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -47,12 +53,22 @@ import com.alotube.app.ui.theme.accents
  * Apariencia: color de acento (paleta + HEX propio + restablecer). Es el mismo código de antes:
  * al cambiar el color se guarda en SharedPreferences y se recrea la Activity (onAccentChanged).
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AppearanceScreen(onBack: () -> Unit, onAccentChanged: () -> Unit) {
     val ctx = LocalContext.current
+    val haptics = LocalHapticFeedback.current
+
+    // Se incrementa al borrar un color para que la lista se vuelva a leer de SharedPreferences
+    var refresh by remember { mutableIntStateOf(0) }
     val current = ThemeUtils.accent(ctx)
-    val customs = ThemeUtils.customColors(ctx)
-    val swatches = ThemeUtils.ACCENT_COLORS.toList() + customs.filter { it !in ThemeUtils.ACCENT_COLORS }
+    val customSwatches = remember(refresh) {
+        ThemeUtils.customColors(ctx).filter { it !in ThemeUtils.ACCENT_COLORS }
+    }
+    val swatches = ThemeUtils.ACCENT_COLORS.toList() + customSwatches
+
+    // Color personalizado pendiente de confirmar su eliminación (null = ninguno)
+    var colorToDelete by remember { mutableStateOf<Int?>(null) }
 
     var hex by remember { mutableStateOf("") }
     var hexError by remember { mutableStateOf(false) }
@@ -70,6 +86,53 @@ fun AppearanceScreen(onBack: () -> Unit, onAccentChanged: () -> Unit) {
             ThemeUtils.addCustom(ctx, parsed)
             pick(parsed)
         }
+    }
+
+    // ---- Confirmación de eliminación ----
+    val target = colorToDelete
+    if (target != null) {
+        AlertDialog(
+            onDismissRequest = { colorToDelete = null },
+            containerColor = AloColors.Sheet,
+            titleContentColor = AloColors.Ink,
+            textContentColor = AloColors.Mut,
+            shape = RoundedCornerShape(24.dp),
+            title = { Text(stringResource(R.string.accent_delete_title)) },
+            text = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clip(CircleShape)
+                            .background(Color(target))
+                            .border(1.dp, AloColors.Ln2, CircleShape)
+                    )
+                    Text(
+                        text = "#%06X".format(target and 0x00FFFFFF),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AloColors.Mut
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    colorToDelete = null
+                    // Se quita de la lista guardada; si era el color activo, vuelve al dorado
+                    val accentReset = ThemeUtils.removeCustom(ctx, target)
+                    if (accentReset) onAccentChanged() else refresh++
+                }) {
+                    Text(stringResource(R.string.accent_delete_confirm), color = AloColors.Danger)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { colorToDelete = null }) {
+                    Text(stringResource(R.string.accent_delete_cancel), color = AloColors.Mut)
+                }
+            }
+        )
     }
 
     Column(
@@ -113,7 +176,16 @@ fun AppearanceScreen(onBack: () -> Unit, onAccentChanged: () -> Unit) {
                                         color = if (selected) AloColors.Ink else AloColors.Ln2,
                                         shape = CircleShape
                                     )
-                                    .clickable { pick(color) }
+                                    .combinedClickable(
+                                        onClick = { pick(color) }, // toque corto: aplica el color
+                                        // Mantener presionado: solo en colores propios (los 12 básicos no se borran)
+                                        onLongClick = if (color in customSwatches) {
+                                            {
+                                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                colorToDelete = color
+                                            }
+                                        } else null
+                                    )
                             )
                         }
                     }
