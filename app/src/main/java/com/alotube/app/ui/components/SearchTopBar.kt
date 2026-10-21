@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -52,7 +53,9 @@ fun SearchTopBar(
     onQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
     onClear: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** El texto contiene un enlace de YouTube: se muestra el ícono de enlace en el acento. */
+    isLink: Boolean = false
 ) {
     OutlinedTextField(
         value = query,
@@ -64,8 +67,9 @@ fun SearchTopBar(
         leadingIcon = {
             IconButton(onClick = onSearch) {
                 Icon(
-                    painter = painterResource(R.drawable.ic_search),
-                    contentDescription = stringResource(R.string.search_hint)
+                    painter = painterResource(if (isLink) R.drawable.ic_link else R.drawable.ic_search),
+                    contentDescription = stringResource(R.string.search_hint),
+                    tint = if (isLink) MaterialTheme.accents.accent else LocalContentColor.current
                 )
             }
         },

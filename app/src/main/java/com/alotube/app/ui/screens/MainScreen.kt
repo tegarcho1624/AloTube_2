@@ -12,6 +12,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,6 +29,7 @@ import com.alotube.app.ui.components.SearchTopBar
 import com.alotube.app.ui.components.StatusMessage
 import com.alotube.app.ui.components.VideoGrid
 import com.alotube.app.ui.theme.accents
+import com.alotube.app.util.YoutubeLinks
 import com.alotube.app.viewmodel.SearchError
 import com.alotube.app.viewmodel.SearchViewModel
 
@@ -36,6 +39,7 @@ private fun SearchError.messageRes(): Int = when (this) {
     SearchError.BLOCKED -> R.string.error_blocked
     SearchError.EXTRACTION -> R.string.error_extraction
     SearchError.UNKNOWN -> R.string.error_unknown
+    SearchError.INVALID_LINK -> R.string.error_link
 }
 
 /** Pestaña "Inicio": logo, buscador y resultados. El padding de barras lo pone AloTubeRoot. */
@@ -51,10 +55,17 @@ fun MainScreen(
     val error = state.error
     val results = state.results
 
+    // Si el texto era un enlace, el ViewModel pide abrir ese video directamente en el reproductor
+    val currentOnVideoClick by rememberUpdatedState(onVideoClick)
+    LaunchedEffect(Unit) {
+        viewModel.openVideo.collect { video -> currentOnVideoClick(listOf(video), 0) }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         AloTubeHeader()
         SearchTopBar(
             query = state.query,
+            isLink = YoutubeLinks.containsLink(state.query),
             onQueryChange = viewModel::onQueryChange,
             onSearch = {
                 focusManager.clearFocus()

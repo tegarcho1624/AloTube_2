@@ -63,3 +63,7 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 ## Ajustes reestructurados
 - `SettingsScreen` = NavHost (Navigation Compose): principal (perfil + Ajustes / Buscar actualizaciones / Descargas) y submenú (Video y audio, Apariencia, Historial y caché, Notificación, Descargar).
 - Apariencia = color de acento; Video y audio = "Reanudar tras interrupciones" (misma lógica, otra pantalla).
+
+## Enlaces de YouTube en el buscador
+- `YoutubeLinks` detecta youtube.com/watch, youtu.be, m./music.youtube.com, shorts, live, embed (con o sin https, también dentro de un texto).
+- Si es un enlace: spinner, StreamInfo y abre el reproductor directo; si falla: "Enlace no válido o video no disponible". Si no, búsqueda normal.
