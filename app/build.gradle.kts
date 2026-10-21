@@ -13,8 +13,8 @@ android {
         // 29: permite guardar descargas con MediaStore sin pedir permisos de almacenamiento
         minSdk = 29
         targetSdk = 34
-        versionCode = 11
-        versionName = "2.0.0-nav5"
+        versionCode = 12
+        versionName = "2.0.0-ajustes"
     }
 
     buildTypes {
@@ -61,6 +61,7 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.9.3")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+    implementation("androidx.navigation:navigation-compose:2.8.4")
 
     // Miniaturas
     implementation("io.coil-kt:coil-compose:2.7.0")

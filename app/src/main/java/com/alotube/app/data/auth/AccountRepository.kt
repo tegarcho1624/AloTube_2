@@ -5,9 +5,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import org.json.JSONTokener
 import java.util.concurrent.TimeUnit
 
-/** Lee el correo de la cuenta recién iniciada. Es opcional: si falla, la sesión sigue siendo válida. */
+data class AccountProfile(val name: String?, val email: String)
+
+/** Lee nombre y correo de la cuenta recién iniciada. Es opcional: si falla, la sesión sigue siendo válida. */
 object AccountRepository {
 
     private const val LIST_ACCOUNTS =
@@ -23,7 +26,7 @@ object AccountRepository {
         .build()
 
     /** [googleCookies]: cookies de accounts.google.com leídas del WebView; no se guardan. */
-    suspend fun fetchEmail(googleCookies: String?): String? = withContext(Dispatchers.IO) {
+    suspend fun fetchProfile(googleCookies: String?): AccountProfile? = withContext(Dispatchers.IO) {
         if (googleCookies.isNullOrBlank()) return@withContext null
         try {
             val request = Request.Builder()
@@ -35,7 +38,7 @@ object AccountRepository {
                 if (!response.isSuccessful) {
                     null
                 } else {
-                    EMAIL_REGEX.find(response.body?.string().orEmpty())?.value
+                    parseProfile(response.body?.string().orEmpty())
                 }
             }
         } catch (e: CancellationException) {
@@ -43,5 +46,19 @@ object AccountRepository {
         } catch (_: Exception) {
             null
         }
+    }
+
+    /** La respuesta trae ..."Nombre","correo@..."...; el nombre es opcional. */
+    private fun parseProfile(body: String): AccountProfile? {
+        val email = EMAIL_REGEX.find(body)?.value ?: return null
+        val nameMatch = Regex("\"((?:[^\"\\\\]|\\\\.){1,100})\",\"" + Regex.escape(email) + "\"").find(body)
+        val name = nameMatch?.groupValues?.get(1)?.let { raw ->
+            try {
+                JSONTokener("\"$raw\"").nextValue() as? String
+            } catch (_: Exception) {
+                raw
+            }
+        }?.takeIf { it.isNotBlank() && !it.contains('@') }
+        return AccountProfile(name = name, email = email)
     }
 }

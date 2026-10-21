@@ -10,7 +10,8 @@ import kotlinx.coroutines.flow.asStateFlow
 
 data class SessionState(
     val loggedIn: Boolean = false,
-    val email: String? = null
+    val email: String? = null,
+    val name: String? = null
 )
 
 /**
@@ -23,6 +24,7 @@ object SessionStore {
     private const val FILE = "alotube_session"
     private const val KEY_COOKIES = "cookies"
     private const val KEY_EMAIL = "email"
+    private const val KEY_NAME = "name"
 
     /** Cookies que prueban una sesión iniciada en YouTube. */
     private val REQUIRED = listOf("SAPISID", "__Secure-3PAPISID")
@@ -45,7 +47,7 @@ object SessionStore {
             val cookies = p?.getString(KEY_COOKIES, null)
             if (!cookies.isNullOrBlank() && hasSessionKeys(cookies)) {
                 cookieHeader = cookies
-                _state.value = SessionState(true, p.getString(KEY_EMAIL, null))
+                _state.value = SessionState(true, p.getString(KEY_EMAIL, null), p.getString(KEY_NAME, null))
             }
         } catch (_: Exception) {
             // Almacén ilegible: se arranca sin sesión (nunca debe tumbar la app)
@@ -55,17 +57,18 @@ object SessionStore {
     }
 
     /** Devuelve true si se guardó correctamente. */
-    fun save(ctx: Context, cookies: String, email: String?): Boolean {
+    fun save(ctx: Context, cookies: String, email: String?, name: String? = null): Boolean {
         if (!hasSessionKeys(cookies)) return false
         return try {
             val p = prefs(ctx) ?: return false
             val ok = p.edit()
                 .putString(KEY_COOKIES, cookies)
                 .putString(KEY_EMAIL, email)
+                .putString(KEY_NAME, name)
                 .commit()
             if (ok) {
                 cookieHeader = cookies
-                _state.value = SessionState(true, email)
+                _state.value = SessionState(true, email, name)
             }
             ok
         } catch (_: Exception) {

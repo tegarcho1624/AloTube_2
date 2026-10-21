@@ -44,8 +44,8 @@ class LoginViewModel(app: Application) : AndroidViewModel(app) {
         _state.update { it.copy(status = LoginStatus.SAVING, error = false) }
         viewModelScope.launch {
             try {
-                val email = withTimeoutOrNull(6_000) { AccountRepository.fetchEmail(googleCookies) }
-                val saved = SessionStore.save(getApplication(), youtubeCookies, email)
+                val profile = withTimeoutOrNull(6_000) { AccountRepository.fetchProfile(googleCookies) }
+                val saved = SessionStore.save(getApplication(), youtubeCookies, profile?.email, profile?.name)
                 _state.update {
                     if (saved) it.copy(status = LoginStatus.DONE)
                     else it.copy(status = LoginStatus.BROWSING, error = true)

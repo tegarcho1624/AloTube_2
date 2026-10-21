@@ -59,3 +59,7 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 ## Fase 9B: más calidades y audio .opus
 - Video: además de los progresivos (360p), MP4 H.264 hasta 1080p (video + audio m4a unidos con MediaMuxer, sin FFmpeg).
 - Audio: Opus de WebM se reempaqueta como Ogg Opus (.opus). Nunca se ofrece .webm.
+
+## Ajustes reestructurados
+- `SettingsScreen` = NavHost (Navigation Compose): principal (perfil + Ajustes / Buscar actualizaciones / Descargas) y submenú (Video y audio, Apariencia, Historial y caché, Notificación, Descargar).
+- Apariencia = color de acento; Video y audio = "Reanudar tras interrupciones" (misma lógica, otra pantalla).
