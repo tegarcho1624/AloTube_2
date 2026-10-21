@@ -71,3 +71,8 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 ## Apariencia: borrar colores propios
 - Mantener presionada una bolita de color propio abre un diálogo de confirmación; los 12 colores básicos no se pueden borrar.
 - `ThemeUtils.removeCustom`: quita el color de `accent_custom`; si era el acento activo, vuelve al dorado.
+
+## Búsqueda: canales y scroll infinito
+- Pestañas Videos / Canales. Primero se cargan los videos; los canales se piden aparte (filtro CHANNELS del SearchExtractor).
+- Paginación (getPage) para ambos tipos; `LoadMoreEffect` en las cuadrículas.
+- Tocar un canal: Toast "Abriendo canal: [Nombre] (Próximamente)".

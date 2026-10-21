@@ -28,3 +28,12 @@ fun formatCount(count: Long): String? = when {
     count < 1_000_000 -> "${compact(count / 1_000.0)} mil"
     else -> "${compact(count / 1_000_000.0)} M"
 }
+
+/** "62,8 mil suscriptores", "14,9 M de suscriptores". null si se desconoce. */
+fun formatSubscribers(count: Long): String? = when {
+    count < 0 -> null
+    count == 1L -> "1 suscriptor"
+    count < 1_000 -> "$count suscriptores"
+    count < 1_000_000 -> "${compact(count / 1_000.0)} mil suscriptores"
+    else -> "${compact(count / 1_000_000.0)} M de suscriptores"
+}

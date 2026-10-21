@@ -1,13 +1,28 @@
 package com.alotube.app.data.repository
 
+import com.alotube.app.data.model.ChannelItem
+import com.alotube.app.data.model.SearchPage
 import com.alotube.app.data.model.VideoItem
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage
+import org.schabi.newpipe.extractor.InfoItem
+import org.schabi.newpipe.extractor.Page
 import org.schabi.newpipe.extractor.ServiceList
+import org.schabi.newpipe.extractor.channel.ChannelInfoItem
+import org.schabi.newpipe.extractor.services.youtube.linkHandler.YoutubeSearchQueryHandlerFactory
 import org.schabi.newpipe.extractor.stream.StreamInfo
 import org.schabi.newpipe.extractor.stream.StreamInfoItem
 import org.schabi.newpipe.extractor.stream.StreamType
+
+private inline fun <T> safeCall(block: () -> T): Result<T> = try {
+    Result.success(block())
+} catch (e: CancellationException) {
+    throw e
+} catch (e: Exception) {
+    Result.failure(e)
+}
 
 /** Única clase que conoce NewPipeExtractor. El resto de la app usa [VideoItem]. */
 class VideoRepository {
@@ -26,6 +41,80 @@ class VideoRepository {
             Result.failure(e)
         }
     }
+
+    // ---------- Videos con paginación ----------
+
+    /** Primera página de videos (misma búsqueda de siempre) + referencia a la siguiente. */
+    suspend fun searchVideos(query: String): Result<SearchPage<VideoItem>> = withContext(Dispatchers.IO) {
+        safeCall {
+            val extractor = ServiceList.YouTube.getSearchExtractor(query)
+            extractor.fetchPage()
+            collectVideos(extractor.initialPage) { extractor.getPage(it) }
+        }
+    }
+
+    /** Páginas siguientes (scroll infinito). */
+    suspend fun moreVideos(query: String, page: Page): Result<SearchPage<VideoItem>> = withContext(Dispatchers.IO) {
+        safeCall {
+            val extractor = ServiceList.YouTube.getSearchExtractor(query)
+            collectVideos(extractor.getPage(page)) { extractor.getPage(it) }
+        }
+    }
+
+    /**
+     * Se queda con los videos de la página. Si una página trae solo canales/listas (sin videos) y hay
+     * más, se pide la siguiente (máx. 3 veces) para que el scroll infinito no se quede "vacío".
+     */
+    private fun collectVideos(
+        first: InfoItemsPage<InfoItem>,
+        next: (Page) -> InfoItemsPage<InfoItem>
+    ): SearchPage<VideoItem> {
+        var page = first
+        val videos = mutableListOf<VideoItem>()
+        var tries = 0
+        while (true) {
+            videos += page.items.filterIsInstance<StreamInfoItem>().map { it.toVideoItem() }
+            val nextPage = if (page.hasNextPage()) page.nextPage else null
+            if (videos.isNotEmpty() || nextPage == null || ++tries >= 3) return SearchPage(videos, nextPage)
+            page = next(nextPage)
+        }
+    }
+
+    // ---------- Canales con paginación ----------
+
+    private fun channelExtractor(query: String) = ServiceList.YouTube.getSearchExtractor(
+        query,
+        listOf(YoutubeSearchQueryHandlerFactory.CHANNELS),
+        ""
+    )
+
+    suspend fun searchChannels(query: String): Result<SearchPage<ChannelItem>> = withContext(Dispatchers.IO) {
+        safeCall {
+            val extractor = channelExtractor(query)
+            extractor.fetchPage()
+            toChannelPage(extractor.initialPage)
+        }
+    }
+
+    suspend fun moreChannels(query: String, page: Page): Result<SearchPage<ChannelItem>> = withContext(Dispatchers.IO) {
+        safeCall { toChannelPage(channelExtractor(query).getPage(page)) }
+    }
+
+    private fun toChannelPage(page: InfoItemsPage<InfoItem>): SearchPage<ChannelItem> =
+        SearchPage(
+            items = page.items.filterIsInstance<ChannelInfoItem>().map {
+                ChannelItem(
+                    url = it.url,
+                    name = it.name ?: "",
+                    avatarUrl = it.thumbnails.lastOrNull()?.url?.let { u ->
+                        if (u.startsWith("//")) "https:$u" else u
+                    },
+                    subscriberCount = it.subscriberCount,
+                    description = it.description?.takeIf { d -> d.isNotBlank() }
+                )
+            },
+            nextPage = if (page.hasNextPage()) page.nextPage else null
+        )
 
     /**
      * Obtiene los datos del video de un enlace con StreamInfo (NewPipeExtractor). Si hay sesión de

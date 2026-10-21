@@ -113,4 +113,10 @@
     <string name="accent_delete_title">¿Deseas eliminar este color?</string>
     <string name="accent_delete_confirm">Eliminar</string>
     <string name="accent_delete_cancel">Cancelar</string>
+    <string name="search_tab_videos">Videos</string>
+    <string name="search_tab_channels">Canales</string>
+    <string name="search_no_channels">No se encontraron canales.</string>
+    <string name="search_channels_error">No se pudieron cargar los canales.</string>
+    <string name="channel_view">Ver canal</string>
+    <string name="channel_open_soon">Abriendo canal: %1$s (Próximamente)</string>
 </resources>
