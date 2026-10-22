@@ -149,4 +149,11 @@
     <string name="lp_folder_one">1 video</string>
     <string name="lp_folder_many">%1$d videos</string>
     <string name="mp_title">Música</string>
+    <string name="mp_unknown_artist">Artista Desconocido</string>
+    <string name="mp_songs_one">1 canción</string>
+    <string name="mp_songs_many">%1$d canciones</string>
+    <string name="mp_root">Música</string>
+    <string name="mp_play">Reproducir</string>
+    <string name="mp_pause">Pausa</string>
+    <string name="mp_next">Siguiente</string>
 </resources>

@@ -87,6 +87,13 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 - `LocalMediaRepository` lee `BUCKET_ID` y `BUCKET_DISPLAY_NAME`; `LocalMediaViewModel` guarda `currentFolderId` (null = carpetas) y comparte la lectura de MediaStore entre ambas pestañas.
 - `LocalScreenParts.kt`: permisos, encabezado y reproducción segura compartidos por las dos pantallas.
 
+## Interfaz de audio (pestaña Música)
+- `data/local/AudioMetadata.kt`: `AudioMetadataRepository` lee título, artista, álbum y carátula con `MediaMetadataRetriever` en segundo plano (máx. 3 lecturas a la vez, caché en memoria). Sin etiquetas: el nombre del archivo es el título y el artista es "Artista Desconocido". Sin carátula incrustada se pide la del sistema (`loadThumbnail`).
+- `MusicScreen`: carpetas de audio (carátula del primer audio que la tenga, o nota musical con el acento) y, dentro, filas con carátula, título en negrita, artista y duración. La canción que suena se ilumina y muestra un ecualizador animado (`AudioComponents.kt`). Estado: `currentAudioFolderId` en `LocalMediaViewModel`.
+- `PlayerScreen`: si el archivo es un audio local muestra título / artista / álbum y la carátula grande en el centro.
+- Mini-reproductor (`MiniPlayer.kt`, en `AloTubeRoot` sobre la barra de navegación): carátula, título, artista, Play/Pausa y Siguiente; al tocarlo abre el reproductor completo. `player/NowPlaying.kt` solo LEE el estado del ExoPlayer (cada 300 ms) y `LocalAudioController` hace Pausa/Siguiente cuando la pantalla completa está cerrada.
+- Cambio mínimo en `PlayerActivity`: al cerrar la pantalla completa con MÚSICA LOCAL el audio sigue sonando (con mini-reproductor y notificación); con video o YouTube se detiene como siempre. Si ya suena el mismo archivo al abrir el reproductor, no se reinicia.
+
 ## Reproductor local (pestaña Video Player)
 - Permisos: READ_MEDIA_VIDEO / READ_MEDIA_AUDIO (Android 13+) y READ_EXTERNAL_STORAGE (hasta 12), pedidos al abrir la pestaña.
 - `LocalMediaRepository`: MediaStore (Video/Audio), por defecto solo `Download/`; interruptor para ver todo el dispositivo.

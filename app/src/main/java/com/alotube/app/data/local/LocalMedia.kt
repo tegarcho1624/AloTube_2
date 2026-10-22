@@ -20,11 +20,11 @@ data class LocalMedia(
     val title: String get() = name.substringBeforeLast('.', name)
 }
 
-/** Carpeta que contiene videos (agrupada por BUCKET_ID). [cover] = el video más reciente, para la miniatura. */
+/** Carpeta que contiene videos o audios (agrupada por BUCKET_ID). [cover] = el primero de la lista, para la miniatura. */
 data class LocalFolder(
     val id: Long,
     val name: String,
-    val videoCount: Int,
+    val count: Int,
     val cover: LocalMedia
 )
 

@@ -240,10 +240,10 @@ fun LocalFolderCard(folder: LocalFolder, onClick: () -> Unit, modifier: Modifier
             modifier = Modifier.padding(top = 8.dp)
         )
         Text(
-            text = if (folder.videoCount == 1) {
+            text = if (folder.count == 1) {
                 stringResource(R.string.lp_folder_one)
             } else {
-                stringResource(R.string.lp_folder_many, folder.videoCount)
+                stringResource(R.string.lp_folder_many, folder.count)
             },
             style = MaterialTheme.typography.bodySmall,
             color = AloColors.Mut

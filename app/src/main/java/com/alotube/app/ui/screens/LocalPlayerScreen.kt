@@ -93,9 +93,13 @@ fun LocalPlayerScreen(
     }
 }
 
-/** Nivel 2: flecha atrás + "Inicio > Nombre de la carpeta". */
+/** Nivel 2: flecha atrás + "Inicio > Nombre de la carpeta" (también lo usa Música con su propia raíz). */
 @Composable
-private fun Breadcrumb(name: String, onBack: () -> Unit) {
+fun Breadcrumb(
+    name: String,
+    onBack: () -> Unit,
+    root: String = stringResource(R.string.lp_breadcrumb_root)
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -110,7 +114,7 @@ private fun Breadcrumb(name: String, onBack: () -> Unit) {
             )
         }
         Text(
-            text = stringResource(R.string.lp_breadcrumb_root),
+            text = root,
             style = MaterialTheme.typography.titleMedium,
             color = AloColors.Mut,
             modifier = Modifier

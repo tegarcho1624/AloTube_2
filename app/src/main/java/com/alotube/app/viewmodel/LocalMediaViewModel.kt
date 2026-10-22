@@ -23,7 +23,9 @@ data class LocalMediaUiState(
     /** false = solo Download/; true = todo el dispositivo. */
     val includeAll: Boolean = false,
     /** Carpeta de videos abierta (BUCKET_ID). null = se muestran las carpetas. */
-    val currentFolderId: Long? = null
+    val currentFolderId: Long? = null,
+    /** Carpeta de audios abierta en "Música" (BUCKET_ID). null = se muestran las carpetas. */
+    val currentAudioFolderId: Long? = null
 ) {
     /** Carpetas con videos, ordenadas por nombre. */
     val folders: List<LocalFolder> by lazy(LazyThreadSafetyMode.NONE) {
@@ -36,6 +38,26 @@ data class LocalMediaUiState(
     }
 
     val currentFolder: LocalFolder? get() = currentFolderId?.let { id -> folders.firstOrNull { it.id == id } }
+
+    /** Audios agrupados por carpeta; dentro de cada una, por título. */
+    private val audioGroups: Map<Long, List<LocalMedia>> by lazy(LazyThreadSafetyMode.NONE) {
+        audios.groupBy { it.bucketId }.mapValues { (_, list) -> list.sortedBy { it.title.lowercase() } }
+    }
+
+    /** Carpetas con audios, ordenadas por nombre. */
+    val audioFolders: List<LocalFolder> by lazy(LazyThreadSafetyMode.NONE) {
+        audioGroups
+            .map { (id, list) ->
+                LocalFolder(id, list.first().bucketName.ifBlank { UNNAMED_FOLDER }, list.size, list.first())
+            }
+            .sortedBy { it.name.lowercase() }
+    }
+
+    val currentAudioFolder: LocalFolder?
+        get() = currentAudioFolderId?.let { id -> audioFolders.firstOrNull { it.id == id } }
+
+    /** Audios de una carpeta (en orden por título). */
+    fun audioTracks(folderId: Long): List<LocalMedia> = audioGroups[folderId].orEmpty()
 
     /** Videos de la carpeta abierta (vacío si no hay ninguna abierta). */
     val folderVideos: List<LocalMedia>
@@ -68,6 +90,9 @@ class LocalMediaViewModel(app: Application) : AndroidViewModel(app) {
                             // Si la carpeta abierta ya no tiene videos, se vuelve a la vista de carpetas
                             currentFolderId = it.currentFolderId?.takeIf { id ->
                                 library.videos.any { v -> v.bucketId == id }
+                            },
+                            currentAudioFolderId = it.currentAudioFolderId?.takeIf { id ->
+                                library.audios.any { a -> a.bucketId == id }
                             }
                         )
                     }
@@ -85,7 +110,7 @@ class LocalMediaViewModel(app: Application) : AndroidViewModel(app) {
         _state.update {
             it.copy(
                 includeAll = value, loaded = false, videos = emptyList(), audios = emptyList(),
-                currentFolderId = null
+                currentFolderId = null, currentAudioFolderId = null
             )
         }
         load()
@@ -96,4 +121,9 @@ class LocalMediaViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Vuelve a la vista de carpetas (vista nivel 1). */
     fun closeFolder() = _state.update { it.copy(currentFolderId = null) }
+
+    /** Abre una carpeta de audios en "Música". */
+    fun openAudioFolder(id: Long) = _state.update { it.copy(currentAudioFolderId = id) }
+
+    fun closeAudioFolder() = _state.update { it.copy(currentAudioFolderId = null) }
 }

@@ -37,6 +37,7 @@ import com.alotube.app.data.model.VideoItem
 import com.alotube.app.player.PlaybackQueue
 import com.alotube.app.player.PlayerMediaSources
 import com.alotube.app.player.PlayerProvider
+import com.alotube.app.player.isLocalAudioUrl
 import com.alotube.app.ui.screens.PlayerScreen
 import com.alotube.app.ui.theme.AloTubeTheme
 import com.alotube.app.viewmodel.PlayerViewModel
@@ -153,6 +154,14 @@ class PlayerActivity : ComponentActivity() {
             .build()
 
         if (option.isLocal) {
+            // Si ya suena este mismo archivo (p. ej. se abrió desde el mini-reproductor) no se reinicia
+            val sameUri = Uri.parse(option.videoUrl)
+            if (player.currentMediaItem?.localConfiguration?.uri == sameUri &&
+                player.playbackState != Player.STATE_IDLE &&
+                player.playbackState != Player.STATE_ENDED
+            ) {
+                return
+            }
             // Archivo local (content:// o file://): el ExoPlayer único lo abre directamente
             player.setMediaItem(
                 MediaItem.Builder()
@@ -299,7 +308,12 @@ class PlayerActivity : ComponentActivity() {
             // Cerrar la pantalla (atrás, flecha, X del PiP) detiene también el audio y el servicio.
             // Si el sistema solo destruye la Activity en segundo plano, la reproducción continúa.
             if (isFinishing && PlayerProvider.owner === this) {
-                PlayerProvider.stopPlayback(this)
+                if (isLocalAudioUrl(PlaybackQueue.state.value.current?.url)) {
+                    // Música local: sigue sonando (mini-reproductor y notificación); solo se suelta la propiedad
+                    PlayerProvider.owner = null
+                } else {
+                    PlayerProvider.stopPlayback(this)
+                }
             }
         }
         super.onDestroy()

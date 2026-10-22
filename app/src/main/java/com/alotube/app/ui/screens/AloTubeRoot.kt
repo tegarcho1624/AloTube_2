@@ -1,6 +1,7 @@
 package com.alotube.app.ui.screens
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -15,6 +16,7 @@ import androidx.compose.ui.res.stringResource
 import com.alotube.app.R
 import com.alotube.app.data.model.VideoItem
 import com.alotube.app.ui.components.AloNavBar
+import com.alotube.app.ui.components.MiniPlayerHost
 import com.alotube.app.ui.theme.AloColors
 
 /** Raíz de la app: navegación inferior + pestaña activa. La pantalla de canal se muestra encima. */
@@ -34,7 +36,13 @@ fun AloTubeRoot(
         // La navegación principal sigue "viva" debajo: al volver del canal se conservan resultados y scroll
         Scaffold(
             containerColor = AloColors.Bg,
-            bottomBar = { AloNavBar(selected = tab, onSelect = { tab = it }) }
+            bottomBar = {
+                Column {
+                    // Mini-reproductor: solo aparece si suena (o está en pausa) una música local
+                    MiniPlayerHost(onOpen = onVideoClick)
+                    AloNavBar(selected = tab, onSelect = { tab = it })
+                }
+            }
         ) { padding ->
             Box(
                 modifier = Modifier

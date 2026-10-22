@@ -3,6 +3,7 @@
 package com.alotube.app.ui.screens
 
 import android.content.ActivityNotFoundException
+import android.graphics.Bitmap
 import android.content.Intent
 import android.net.Uri
 import android.view.View
@@ -14,12 +15,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -36,10 +40,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -54,9 +60,13 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.alotube.app.R
+import com.alotube.app.data.local.AudioInfo
+import com.alotube.app.data.local.AudioMetadataRepository
 import com.alotube.app.data.model.PlaybackOption
+import com.alotube.app.player.isLocalAudioUrl
 import com.alotube.app.player.applyAloStyle
 import com.alotube.app.ui.components.ActionSpec
+import com.alotube.app.ui.components.AudioCover
 import com.alotube.app.ui.components.DownloadDialog
 import com.alotube.app.ui.components.WatchInfo
 import com.alotube.app.ui.theme.accents
@@ -113,6 +123,24 @@ fun PlayerScreen(
     }
 
     val isLocal = state.current?.isLocal == true
+
+    // Música local: título / artista / álbum de las etiquetas (MediaMetadataRetriever) y la carátula
+    // en el centro. Solo cambia lo que se MUESTRA; la reproducción es la de siempre.
+    val isLocalAudio = isLocalAudioUrl(state.url)
+    val audioInfo by produceState<AudioInfo?>(initialValue = null, state.url) {
+        value = if (isLocalAudio) {
+            AudioMetadataRepository.load(ctx, Uri.parse(state.url), state.title)
+        } else {
+            null
+        }
+    }
+    val bigCover by produceState<Bitmap?>(initialValue = null, state.url) {
+        value = if (isLocalAudio) {
+            AudioMetadataRepository.loadLargeCover(ctx, Uri.parse(state.url), state.title)
+        } else {
+            null
+        }
+    }
 
     fun share() {
         if (isLocal) {
@@ -177,7 +205,12 @@ fun PlayerScreen(
             .background(cs.background)
     ) {
         val expanded = isFullscreen || inPip || error != null
-        val videoHeight = minOf(maxWidth * 9f / 16f, maxHeight * 0.55f)
+        // Música: el área es más alta (cuadrada) para que quepa la carátula
+        val videoHeight = if (isLocalAudio) {
+            minOf(maxWidth, maxHeight * 0.6f)
+        } else {
+            minOf(maxWidth * 9f / 16f, maxHeight * 0.55f)
+        }
 
         Column(modifier = Modifier.fillMaxSize()) {
             Box(
@@ -247,6 +280,25 @@ fun PlayerScreen(
                         update = { it.useController = !inPip },
                         onRelease = { it.player = null }
                     )
+
+                    // Carátula (o nota musical con el acento) en el centro, entre la barra superior y los controles
+                    if (isLocalAudio && !inPip) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(start = 16.dp, end = 16.dp, top = 56.dp, bottom = 88.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            AudioCover(
+                                bitmap = bigCover ?: audioInfo?.cover,
+                                iconSize = 72.dp,
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .aspectRatio(1f)
+                                    .clip(RoundedCornerShape(20.dp))
+                            )
+                        }
+                    }
 
                     if (state.isLoading) {
                         CircularProgressIndicator(
@@ -323,10 +375,14 @@ fun PlayerScreen(
 
             if (!expanded) {
                 WatchInfo(
-                    title = state.title,
-                    author = state.author,
-                    meta = listOfNotNull(formatViews(state.viewCount), state.uploadDate)
-                        .joinToString(" · "),
+                    title = if (isLocalAudio) audioInfo?.title ?: state.title else state.title,
+                    author = if (isLocalAudio) audioInfo?.artist.orEmpty() else state.author,
+                    meta = if (isLocalAudio) {
+                        audioInfo?.album.orEmpty()
+                    } else {
+                        listOfNotNull(formatViews(state.viewCount), state.uploadDate)
+                            .joinToString(" · ")
+                    },
                     likes = formatCount(state.likeCount),
                     actions = actions,
                     modifier = Modifier.weight(1f)
