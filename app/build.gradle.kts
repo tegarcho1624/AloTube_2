@@ -13,8 +13,8 @@ android {
         // 29: permite guardar descargas con MediaStore sin pedir permisos de almacenamiento
         minSdk = 29
         targetSdk = 34
-        versionCode = 16
-        versionName = "2.0.0-canal"
+        versionCode = 17
+        versionName = "2.0.0-local"
     }
 
     buildTypes {

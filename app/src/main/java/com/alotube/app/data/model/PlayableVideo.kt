@@ -12,11 +12,14 @@ data class PlaybackOption(
     val videoUrl: String,
     val audioUrl: String? = null,
     val isHls: Boolean = false,
-    val isDash: Boolean = false
+    val isDash: Boolean = false,
+    /** Archivo del dispositivo (content:// o file://): ExoPlayer lo abre directamente. */
+    val isLocal: Boolean = false
 ) {
     /** Texto corto para diagnóstico. */
     val kindLabel: String
         get() = when {
+            isLocal -> "local"
             isHls -> "HLS"
             isDash -> "DASH"
             audioUrl != null -> "adaptativo"

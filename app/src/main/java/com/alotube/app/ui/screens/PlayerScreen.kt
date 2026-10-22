@@ -4,6 +4,7 @@ package com.alotube.app.ui.screens
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.net.Uri
 import android.view.View
 import android.widget.Toast
 import androidx.annotation.StringRes
@@ -73,6 +74,7 @@ private fun PlayerError.messageRes(): Int = when (this) {
     PlayerError.NO_STREAMS -> R.string.perr_no_streams
     PlayerError.PLAYBACK -> R.string.perr_playback
     PlayerError.UNKNOWN -> R.string.perr_unknown
+    PlayerError.LOCAL_FILE -> R.string.perr_local
 }
 
 /**
@@ -110,7 +112,28 @@ fun PlayerScreen(
         Toast.makeText(ctx, R.string.soon_toast, Toast.LENGTH_SHORT).show()
     }
 
+    val isLocal = state.current?.isLocal == true
+
     fun share() {
+        if (isLocal) {
+            // Archivo del dispositivo: se comparte el archivo, no un texto
+            try {
+                val uri = Uri.parse(state.url)
+                ctx.startActivity(
+                    Intent.createChooser(
+                        Intent(Intent.ACTION_SEND).apply {
+                            type = ctx.contentResolver.getType(uri) ?: "*/*"
+                            putExtra(Intent.EXTRA_STREAM, uri)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        },
+                        null
+                    )
+                )
+            } catch (_: Exception) {
+                // Sin apps para compartir o archivo no accesible: no pasa nada
+            }
+            return
+        }
         val text = listOf(state.title, state.url).filter { it.isNotBlank() }.joinToString("\n")
         if (text.isBlank()) return
         try {
@@ -128,7 +151,7 @@ fun PlayerScreen(
         }
     }
 
-    val actions = listOf(
+    val allActions = listOf(
         ActionSpec(R.drawable.ic_act_playlist_add, R.string.act_add, false) { soon() },
         ActionSpec(R.drawable.ic_act_headphones, R.string.act_background, false) { soon() },
         ActionSpec(R.drawable.ic_act_pip, R.string.act_popup, true) {
@@ -141,6 +164,12 @@ fun PlayerScreen(
             if (state.url.isNotBlank()) showDownload = true else soon()
         }
     )
+    // En un archivo local solo tienen sentido Emergente y Compartir
+    val actions = if (isLocal) {
+        allActions.filter { it.icon == R.drawable.ic_act_pip || it.icon == R.drawable.ic_act_share }
+    } else {
+        allActions
+    }
 
     BoxWithConstraints(
         modifier = Modifier

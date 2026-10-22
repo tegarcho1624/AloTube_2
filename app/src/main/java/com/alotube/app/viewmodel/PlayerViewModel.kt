@@ -18,7 +18,7 @@ import org.schabi.newpipe.extractor.exceptions.ReCaptchaException
 import java.io.IOException
 
 enum class PlayerError {
-    NETWORK, BLOCKED, UNAVAILABLE, EXTRACTION, NO_STREAMS, PLAYBACK, UNKNOWN;
+    NETWORK, BLOCKED, UNAVAILABLE, EXTRACTION, NO_STREAMS, PLAYBACK, UNKNOWN, LOCAL_FILE;
 
     companion object {
         fun from(t: Throwable): PlayerError = when (t) {
@@ -118,6 +118,18 @@ class PlayerViewModel(
         val cur = s.current
         playbackNotes += "Reproducción ${cur?.label ?: "?"} (${cur?.kindLabel ?: "?"}) → $detail"
 
+        // Archivo local dañado o que ya no existe: no hay flujo de respaldo ni enlace que renovar
+        if (cur?.isLocal == true) {
+            _state.update {
+                it.copy(
+                    isLoading = false,
+                    error = PlayerError.LOCAL_FILE,
+                    errorDetail = playbackNotes.joinToString("\n")
+                )
+            }
+            return
+        }
+
         val fb = s.fallback
         if (fb != null && cur != fb && !fallbackTried) {
             fallbackTried = true
@@ -138,6 +150,16 @@ class PlayerViewModel(
         fallbackTried = false
         playbackNotes.clear()
         job?.cancel()
+
+        // Archivo del dispositivo: se reproduce directo, sin NewPipeExtractor
+        if (url.startsWith("content://") || url.startsWith("file://")) {
+            val option = PlaybackOption(label = "Local", height = 0, videoUrl = url, isLocal = true)
+            _state.update {
+                it.copy(isLoading = false, options = listOf(option), fallback = null, current = option)
+            }
+            return
+        }
+
         job = viewModelScope.launch {
             repository.getPlayable(url).fold(
                 onSuccess = { video ->

@@ -50,7 +50,7 @@ fun AloTubeRoot(
                         }
                     )
                     1 -> ComingSoonScreen(stringResource(R.string.soon_music))
-                    2 -> LocalPlayerScreen()
+                    2 -> LocalPlayerScreen(onVideoClick = onVideoClick)
                     3 -> LibraryScreen(onVideoClick = onVideoClick)
                     else -> SettingsScreen(onAccentChanged = onAccentChanged, onLoggedOut = onLoggedOut)
                 }

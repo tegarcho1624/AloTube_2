@@ -7,6 +7,13 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <!-- Descargas en segundo plano (ForegroundService tipo dataSync). Guardar con MediaStore no requiere permisos de almacenamiento -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- Reproductor local: leer videos y audios del dispositivo (Android 13+ por tipo de medio) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <!-- Android 12 e inferiores -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
     <!-- Android 13+: sin él la reproducción funciona, pero no se ve la notificación -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Mantiene CPU/Wi-Fi activos con la pantalla apagada mientras suena -->

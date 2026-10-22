@@ -80,3 +80,9 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 ## Pantalla de canal
 - `ChannelRepository`: ChannelExtractor (nombre, avatar, banner, suscriptores, descripción) + videos con ChannelTabExtractor (pestaña "videos") y paginación.
 - `ChannelScreen` se muestra encima de la navegación principal (estado en `AloTubeRoot`), con pestañas Inicio / Videos / Shorts / Listas.
+
+## Reproductor local (pestaña Video Player)
+- Permisos: READ_MEDIA_VIDEO / READ_MEDIA_AUDIO (Android 13+) y READ_EXTERNAL_STORAGE (hasta 12), pedidos al abrir la pestaña.
+- `LocalMediaRepository`: MediaStore (Video/Audio), por defecto solo `Download/`; interruptor para ver todo el dispositivo.
+- Pestañas Videos / Audios con HorizontalPager; miniaturas con ContentResolver.loadThumbnail.
+- Reproducción: el mismo `PlayerActivity`; la "url" es el content:// URI (PlayerViewModel lo reconoce y no usa NewPipeExtractor).

@@ -25,6 +25,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.C
+import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -150,6 +151,19 @@ class PlayerActivity : ComponentActivity() {
             .setArtist(author.ifBlank { null })
             .setArtworkUri(thumb?.let { Uri.parse(it) })
             .build()
+
+        if (option.isLocal) {
+            // Archivo local (content:// o file://): el ExoPlayer único lo abre directamente
+            player.setMediaItem(
+                MediaItem.Builder()
+                    .setUri(Uri.parse(option.videoUrl))
+                    .setMediaMetadata(metadata)
+                    .build()
+            )
+            player.prepare()
+            player.playWhenReady = true
+            return
+        }
 
         val source = PlayerMediaSources.create(option, metadata)
         if (position > 0) player.setMediaSource(source, position) else player.setMediaSource(source)

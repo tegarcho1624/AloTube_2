@@ -131,4 +131,18 @@
     <string name="ch_videos_error">No se pudieron cargar los videos del canal.</string>
     <string name="ch_no_videos">Este canal no tiene videos.</string>
     <string name="ch_see_more">Toca para ver más.</string>
+    <string name="lp_title">Video Player</string>
+    <string name="lp_tab_videos">Videos</string>
+    <string name="lp_tab_audios">Audios</string>
+    <string name="lp_empty_all">No hay videos o audios descargados</string>
+    <string name="lp_empty_videos">No hay videos descargados</string>
+    <string name="lp_empty_audios">No hay audios descargados</string>
+    <string name="lp_perm_text">Para ver tus videos y audios descargados, AloTube necesita permiso para leer archivos multimedia.</string>
+    <string name="lp_perm_grant">Conceder permiso</string>
+    <string name="lp_perm_settings">Abrir ajustes de la app</string>
+    <string name="lp_show_all">Ver todo el dispositivo</string>
+    <string name="lp_show_downloads">Solo descargas</string>
+    <string name="lp_error">No se pudieron leer los archivos.</string>
+    <string name="lp_missing">El archivo ya no existe</string>
+    <string name="perr_local">No se pudo reproducir el archivo. Puede estar dañado o ya no existe.</string>
 </resources>

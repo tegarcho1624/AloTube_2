@@ -37,3 +37,12 @@ fun formatSubscribers(count: Long): String? = when {
     count < 1_000_000 -> "${compact(count / 1_000.0)} mil suscriptores"
     else -> "${compact(count / 1_000_000.0)} M de suscriptores"
 }
+
+/** 12 345 678 -> "11,8 MB". */
+fun formatFileSize(bytes: Long): String = when {
+    bytes < 0 -> ""
+    bytes < 1_024 -> "$bytes B"
+    bytes < 1_024L * 1_024 -> "${compact(bytes / 1_024.0)} KB"
+    bytes < 1_024L * 1_024 * 1_024 -> "${compact(bytes / (1_024.0 * 1_024))} MB"
+    else -> "${compact(bytes / (1_024.0 * 1_024 * 1_024))} GB"
+}
