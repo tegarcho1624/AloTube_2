@@ -49,7 +49,7 @@ fun AloTubeRoot(
                             channelUrl = channel.url
                         }
                     )
-                    1 -> ComingSoonScreen(stringResource(R.string.soon_music))
+                    1 -> MusicScreen(onVideoClick = onVideoClick)
                     2 -> LocalPlayerScreen(onVideoClick = onVideoClick)
                     3 -> LibraryScreen(onVideoClick = onVideoClick)
                     else -> SettingsScreen(onAccentChanged = onAccentChanged, onLoggedOut = onLoggedOut)

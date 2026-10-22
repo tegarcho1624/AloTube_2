@@ -81,6 +81,12 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 - `ChannelRepository`: ChannelExtractor (nombre, avatar, banner, suscriptores, descripción) + videos con ChannelTabExtractor (pestaña "videos") y paginación.
 - `ChannelScreen` se muestra encima de la navegación principal (estado en `AloTubeRoot`), con pestañas Inicio / Videos / Shorts / Listas.
 
+## Reproductor local: Música y carpetas de video
+- **Música** (pestaña 2, `MusicScreen`): audios locales con carátula, nombre y duración. Sin pestañas.
+- **Video Player** (`LocalPlayerScreen`): gestor de carpetas. Nivel 1 = cuadrícula de carpetas con videos (`LocalFolderCard`); nivel 2 = videos de la carpeta, con flecha atrás y "Inicio > Carpeta". El botón Atrás del sistema también vuelve a las carpetas.
+- `LocalMediaRepository` lee `BUCKET_ID` y `BUCKET_DISPLAY_NAME`; `LocalMediaViewModel` guarda `currentFolderId` (null = carpetas) y comparte la lectura de MediaStore entre ambas pestañas.
+- `LocalScreenParts.kt`: permisos, encabezado y reproducción segura compartidos por las dos pantallas.
+
 ## Reproductor local (pestaña Video Player)
 - Permisos: READ_MEDIA_VIDEO / READ_MEDIA_AUDIO (Android 13+) y READ_EXTERNAL_STORAGE (hasta 12), pedidos al abrir la pestaña.
 - `LocalMediaRepository`: MediaStore (Video/Audio), por defecto solo `Download/`; interruptor para ver todo el dispositivo.

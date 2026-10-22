@@ -46,7 +46,9 @@ class LocalMediaRepository {
             MediaStore.MediaColumns._ID,
             MediaStore.MediaColumns.DISPLAY_NAME,
             MediaStore.MediaColumns.DURATION,
-            MediaStore.MediaColumns.SIZE
+            MediaStore.MediaColumns.SIZE,
+            MediaStore.MediaColumns.BUCKET_ID,
+            MediaStore.MediaColumns.BUCKET_DISPLAY_NAME
         )
         val selection = if (includeAll) null else "${MediaStore.MediaColumns.RELATIVE_PATH} LIKE ?"
         val args = if (includeAll) null else arrayOf("Download/%")
@@ -58,6 +60,8 @@ class LocalMediaRepository {
             val nameCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME)
             val durCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DURATION)
             val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
+            val bucketIdCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.BUCKET_ID)
+            val bucketNameCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.BUCKET_DISPLAY_NAME)
             while (cursor.moveToNext()) {
                 val id = cursor.getLong(idCol)
                 result += LocalMedia(
@@ -66,7 +70,9 @@ class LocalMediaRepository {
                     name = cursor.getString(nameCol) ?: "",
                     durationMs = cursor.getLong(durCol),
                     size = cursor.getLong(sizeCol),
-                    isVideo = video
+                    isVideo = video,
+                    bucketId = cursor.getLong(bucketIdCol),
+                    bucketName = cursor.getString(bucketNameCol) ?: ""
                 )
             }
         }

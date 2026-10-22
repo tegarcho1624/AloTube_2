@@ -37,6 +37,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.alotube.app.R
+import com.alotube.app.data.local.LocalFolder
 import com.alotube.app.data.local.LocalMedia
 import com.alotube.app.data.local.LocalThumbnails
 import com.alotube.app.ui.theme.AloColors
@@ -183,5 +184,68 @@ fun LocalAudioRow(media: LocalMedia, onClick: () -> Unit, modifier: Modifier = M
                 color = AloColors.Mut
             )
         }
+    }
+}
+
+/**
+ * Tarjeta de carpeta de videos: miniatura del video más reciente atenuada, ícono de carpeta con el
+ * acento dinámico, nombre y cantidad de videos.
+ */
+@Composable
+fun LocalFolderCard(folder: LocalFolder, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+    ) {
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = AloColors.Sf3),
+            border = BorderStroke(1.dp, AloColors.Ln),
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(4f / 3f)
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                LocalThumbnail(
+                    uri = folder.cover.uri,
+                    placeholder = R.drawable.ic_folder,
+                    width = 320,
+                    height = 240,
+                    modifier = Modifier.fillMaxSize()
+                )
+                // Velo para que la miniatura quede de fondo y el ícono se lea bien
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(AloColors.Scrim)
+                )
+                Icon(
+                    painter = painterResource(R.drawable.ic_folder),
+                    contentDescription = null,
+                    tint = MaterialTheme.accents.hi,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(48.dp)
+                )
+            }
+        }
+        Text(
+            text = folder.name,
+            style = MaterialTheme.typography.titleMedium,
+            color = AloColors.Ink,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 8.dp)
+        )
+        Text(
+            text = if (folder.videoCount == 1) {
+                stringResource(R.string.lp_folder_one)
+            } else {
+                stringResource(R.string.lp_folder_many, folder.videoCount)
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = AloColors.Mut
+        )
     }
 }

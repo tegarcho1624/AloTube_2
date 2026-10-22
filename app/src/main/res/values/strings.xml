@@ -145,4 +145,8 @@
     <string name="lp_error">No se pudieron leer los archivos.</string>
     <string name="lp_missing">El archivo ya no existe</string>
     <string name="perr_local">No se pudo reproducir el archivo. Puede estar dañado o ya no existe.</string>
+    <string name="lp_breadcrumb_root">Inicio</string>
+    <string name="lp_folder_one">1 video</string>
+    <string name="lp_folder_many">%1$d videos</string>
+    <string name="mp_title">Música</string>
 </resources>

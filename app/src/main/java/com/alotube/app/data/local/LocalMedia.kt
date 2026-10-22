@@ -11,11 +11,22 @@ data class LocalMedia(
     val name: String,
     val durationMs: Long,
     val size: Long,
-    val isVideo: Boolean
+    val isVideo: Boolean,
+    /** Carpeta que lo contiene (MediaStore BUCKET_ID / BUCKET_DISPLAY_NAME). */
+    val bucketId: Long = 0L,
+    val bucketName: String = ""
 ) {
     /** Nombre sin extensión. */
     val title: String get() = name.substringBeforeLast('.', name)
 }
+
+/** Carpeta que contiene videos (agrupada por BUCKET_ID). [cover] = el video más reciente, para la miniatura. */
+data class LocalFolder(
+    val id: Long,
+    val name: String,
+    val videoCount: Int,
+    val cover: LocalMedia
+)
 
 data class LocalLibrary(
     val videos: List<LocalMedia>,

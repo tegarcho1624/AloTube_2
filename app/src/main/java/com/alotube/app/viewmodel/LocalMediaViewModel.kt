@@ -3,6 +3,7 @@ package com.alotube.app.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.alotube.app.data.local.LocalFolder
 import com.alotube.app.data.local.LocalMedia
 import com.alotube.app.data.local.LocalMediaRepository
 import kotlinx.coroutines.Job
@@ -20,8 +21,29 @@ data class LocalMediaUiState(
     val videos: List<LocalMedia> = emptyList(),
     val audios: List<LocalMedia> = emptyList(),
     /** false = solo Download/; true = todo el dispositivo. */
-    val includeAll: Boolean = false
-)
+    val includeAll: Boolean = false,
+    /** Carpeta de videos abierta (BUCKET_ID). null = se muestran las carpetas. */
+    val currentFolderId: Long? = null
+) {
+    /** Carpetas con videos, ordenadas por nombre. */
+    val folders: List<LocalFolder> by lazy(LazyThreadSafetyMode.NONE) {
+        videos.groupBy { it.bucketId }
+            .map { (id, list) ->
+                // La lista ya viene con lo más reciente primero: el primero sirve de portada
+                LocalFolder(id, list.first().bucketName.ifBlank { UNNAMED_FOLDER }, list.size, list.first())
+            }
+            .sortedBy { it.name.lowercase() }
+    }
+
+    val currentFolder: LocalFolder? get() = currentFolderId?.let { id -> folders.firstOrNull { it.id == id } }
+
+    /** Videos de la carpeta abierta (vacío si no hay ninguna abierta). */
+    val folderVideos: List<LocalMedia>
+        get() = currentFolderId?.let { id -> videos.filter { it.bucketId == id } } ?: emptyList()
+}
+
+private const val UNNAMED_FOLDER = "(sin nombre)"
+
 
 class LocalMediaViewModel(app: Application) : AndroidViewModel(app) {
 
@@ -42,7 +64,11 @@ class LocalMediaViewModel(app: Application) : AndroidViewModel(app) {
                     _state.update {
                         it.copy(
                             loading = false, loaded = true, error = null,
-                            videos = library.videos, audios = library.audios
+                            videos = library.videos, audios = library.audios,
+                            // Si la carpeta abierta ya no tiene videos, se vuelve a la vista de carpetas
+                            currentFolderId = it.currentFolderId?.takeIf { id ->
+                                library.videos.any { v -> v.bucketId == id }
+                            }
                         )
                     }
                 },
@@ -56,7 +82,18 @@ class LocalMediaViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun setIncludeAll(value: Boolean) {
-        _state.update { it.copy(includeAll = value, loaded = false, videos = emptyList(), audios = emptyList()) }
+        _state.update {
+            it.copy(
+                includeAll = value, loaded = false, videos = emptyList(), audios = emptyList(),
+                currentFolderId = null
+            )
+        }
         load()
     }
+
+    /** Abre una carpeta de videos (vista nivel 2). */
+    fun openFolder(id: Long) = _state.update { it.copy(currentFolderId = id) }
+
+    /** Vuelve a la vista de carpetas (vista nivel 1). */
+    fun closeFolder() = _state.update { it.copy(currentFolderId = null) }
 }
