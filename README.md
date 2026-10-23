@@ -103,3 +103,8 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 ### Pantalla de reproducción de música
 - `AudioPlayerScreen.kt` (`AudioPlayerContent`): fila de 7 botones (⋮, −10 s, anterior, play, siguiente, +10 s, cola; ⋮ y cola aún son avisos "Próximamente"); carátula grande, título / artista / álbum, barra de progreso con tiempo actual y total, controles (anterior, −10 s, play/pausa, +10 s, siguiente) en el acento dinámico; Emergente y Compartir quedan más abajo. Se desplaza si no cabe. Solo usa los métodos normales del `Player`.
 - `OpusTagsReader.kt`: respaldo que lee las etiquetas y la carátula de archivos `.opus` cuando `MediaMetadataRetriever` no las entrega.
+
+## Fondos personalizados
+- Ajustes > Apariencia > **Fondo >** abre **Fondos** (Youtube [Inicio y Biblioteca], Música, Video Player, Ajustes). Tocar una abre el Photo Picker; mantener presionado quita el fondo.
+- `BackgroundStore.kt`: copia la imagen (≤1920 px, JPEG) a `filesDir/backgrounds/` y guarda la ruta en SharedPreferences `backgrounds` (clave por pantalla: youtube, music, video, settings).
+- `BackgroundLayer.kt`: imagen + capa negra al 60 %; sin imagen queda el fondo oscuro de siempre. Se usa en `AloTubeRoot` (por pestaña) y en `PlayerScreen` (música local → Música, video local → Video Player).

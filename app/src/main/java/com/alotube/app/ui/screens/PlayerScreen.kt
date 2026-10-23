@@ -62,6 +62,8 @@ import androidx.media3.ui.PlayerView
 import com.alotube.app.R
 import com.alotube.app.data.local.AudioInfo
 import com.alotube.app.data.local.AudioMetadataRepository
+import com.alotube.app.data.local.BgScope
+import com.alotube.app.ui.components.BackgroundLayer
 import com.alotube.app.data.model.PlaybackOption
 import com.alotube.app.player.isLocalAudioUrl
 import com.alotube.app.player.applyAloStyle
@@ -204,6 +206,14 @@ fun PlayerScreen(
             .fillMaxSize()
             .background(cs.background)
     ) {
+        // Fondo elegido: música local -> "Música"; video local -> "Video Player" (YouTube no lleva)
+        BackgroundLayer(
+            scope = when {
+                isLocalAudio -> BgScope.MUSIC
+                isLocal -> BgScope.VIDEO
+                else -> null
+            }
+        )
         val expanded = isFullscreen || inPip || error != null
         val videoHeight = minOf(maxWidth * 9f / 16f, maxHeight * 0.55f)
 

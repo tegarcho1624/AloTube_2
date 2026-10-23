@@ -164,4 +164,13 @@
     <string name="mp_more_soon">Opciones de canción (Próximamente)</string>
     <string name="mp_queue_soon">Cola de reproducción (Próximamente)</string>
     <string name="mp_seek">Posición</string>
+    <string name="set_background">Fondo</string>
+    <string name="bg_title">Fondos</string>
+    <string name="bg_youtube">Youtube (Inicio y biblioteca)</string>
+    <string name="bg_music">Música</string>
+    <string name="bg_video">Video Player</string>
+    <string name="bg_settings">Ajustes</string>
+    <string name="bg_applied">Fondo aplicado</string>
+    <string name="bg_removed">Fondo quitado</string>
+    <string name="bg_error">No se pudo usar esa imagen</string>
 </resources>

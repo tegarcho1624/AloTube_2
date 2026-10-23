@@ -12,10 +12,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import com.alotube.app.R
 import com.alotube.app.data.model.VideoItem
+import com.alotube.app.data.local.BgScope
 import com.alotube.app.ui.components.AloNavBar
+import com.alotube.app.ui.components.BackgroundLayer
 import com.alotube.app.ui.components.MiniPlayerHost
 import com.alotube.app.ui.theme.AloColors
 
@@ -34,8 +37,17 @@ fun AloTubeRoot(
 
     Box(modifier = Modifier.fillMaxSize()) {
         // La navegación principal sigue "viva" debajo: al volver del canal se conservan resultados y scroll
+        // Fondo de la pestaña activa (imagen elegida + capa oscura, o el oscuro de siempre)
+        BackgroundLayer(
+            scope = when (tab) {
+                0, 3 -> BgScope.YOUTUBE
+                1 -> BgScope.MUSIC
+                2 -> BgScope.VIDEO
+                else -> BgScope.SETTINGS
+            }
+        )
         Scaffold(
-            containerColor = AloColors.Bg,
+            containerColor = Color.Transparent,
             bottomBar = {
                 Column {
                     // Mini-reproductor: solo aparece si suena (o está en pausa) una música local

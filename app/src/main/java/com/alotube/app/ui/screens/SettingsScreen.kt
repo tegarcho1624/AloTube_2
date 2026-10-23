@@ -17,6 +17,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.alotube.app.R
 import com.alotube.app.ui.screens.settings.AppearanceScreen
+import com.alotube.app.ui.screens.settings.BackgroundsScreen
 import com.alotube.app.ui.screens.settings.SettingsMainScreen
 import com.alotube.app.ui.screens.settings.SettingsMenuScreen
 import com.alotube.app.ui.screens.settings.SettingsPlaceholderScreen
@@ -50,7 +51,14 @@ fun SettingsScreen(onAccentChanged: () -> Unit, onLoggedOut: () -> Unit) {
             SettingsMenuScreen(onBack = back, onNavigate = { nav.navigate(it) })
         }
         composable(SettingsRoutes.APPEARANCE) {
-            AppearanceScreen(onBack = back, onAccentChanged = onAccentChanged)
+            AppearanceScreen(
+                onBack = back,
+                onAccentChanged = onAccentChanged,
+                onOpenBackgrounds = { nav.navigate(SettingsRoutes.BACKGROUNDS) }
+            )
+        }
+        composable(SettingsRoutes.BACKGROUNDS) {
+            BackgroundsScreen(onBack = back)
         }
         composable(SettingsRoutes.VIDEO_AUDIO) {
             VideoAudioScreen(onBack = back)

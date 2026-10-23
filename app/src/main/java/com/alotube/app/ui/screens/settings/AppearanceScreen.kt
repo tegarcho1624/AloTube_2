@@ -3,6 +3,7 @@ package com.alotube.app.ui.screens.settings
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,6 +22,8 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -40,6 +43,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -55,7 +59,7 @@ import com.alotube.app.ui.theme.accents
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun AppearanceScreen(onBack: () -> Unit, onAccentChanged: () -> Unit) {
+fun AppearanceScreen(onBack: () -> Unit, onAccentChanged: () -> Unit, onOpenBackgrounds: () -> Unit) {
     val ctx = LocalContext.current
     val haptics = LocalHapticFeedback.current
 
@@ -141,6 +145,29 @@ fun AppearanceScreen(onBack: () -> Unit, onAccentChanged: () -> Unit) {
             .background(AloColors.Bg)
     ) {
         SettingsTopBar(stringResource(R.string.set_appearance), onBack)
+
+        // Fondo >  (abre la pantalla "Fondos")
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onOpenBackgrounds)
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.set_background),
+                style = MaterialTheme.typography.titleMedium,
+                color = AloColors.Ink,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                painter = painterResource(R.drawable.ic_chevron_right),
+                contentDescription = null,
+                tint = AloColors.Mut,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        HorizontalDivider(color = AloColors.Ln)
 
         Column(
             modifier = Modifier

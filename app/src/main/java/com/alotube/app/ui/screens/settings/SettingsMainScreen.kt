@@ -70,7 +70,6 @@ fun SettingsMainScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AloColors.Bg)
             .verticalScroll(rememberScrollState())
     ) {
         Text(

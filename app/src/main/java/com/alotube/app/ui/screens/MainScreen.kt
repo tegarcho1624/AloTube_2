@@ -108,7 +108,7 @@ fun MainScreen(
                 else -> Column(modifier = Modifier.fillMaxSize()) {
                     TabRow(
                         selectedTabIndex = state.tab,
-                        containerColor = AloColors.Bg,
+                        containerColor = androidx.compose.ui.graphics.Color.Transparent,
                         contentColor = accents.hi,
                         divider = { HorizontalDivider(color = AloColors.Ln) }
                     ) {
