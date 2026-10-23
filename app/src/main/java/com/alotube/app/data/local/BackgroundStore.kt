@@ -19,6 +19,17 @@ enum class BgScope(val key: String) {
     SETTINGS("settings")  // Pantalla principal de Ajustes
 }
 
+/** Cómo se ajusta la imagen: se guarda por pantalla en la clave "<pantalla>_scale" (Crop / FillBounds / Fit). */
+enum class BgMode(val pref: String) {
+    FILL("Crop"),          // Rellenar: recorta para llenar la pantalla
+    STRETCH("FillBounds"), // Estirar: deforma para que quepa exacta
+    CENTER("Fit");         // Centrar: imagen completa, adaptada al espacio
+
+    companion object {
+        fun from(pref: String?): BgMode = values().firstOrNull { it.pref == pref } ?: FILL
+    }
+}
+
 /**
  * Fondos personalizados. La imagen elegida se COPIA (reducida, JPEG) a `filesDir/backgrounds/`,
  * así que borrar el original no la rompe, y la ruta se guarda en SharedPreferences "backgrounds"
@@ -42,6 +53,15 @@ object BackgroundStore {
         prefs(ctx).getString(scope.key, null)?.takeIf { File(it).isFile }
 
     fun has(ctx: Context, scope: BgScope): Boolean = path(ctx, scope) != null
+
+    /** Modo de escalado guardado de esa pantalla (por defecto Rellenar). */
+    fun mode(ctx: Context, scope: BgScope): BgMode =
+        BgMode.from(prefs(ctx).getString(scope.key + "_scale", null))
+
+    fun setMode(ctx: Context, scope: BgScope, mode: BgMode) {
+        prefs(ctx).edit().putString(scope.key + "_scale", mode.pref).apply()
+        _version.value = _version.value + 1
+    }
 
     /** Lee la imagen guardada (fuera del hilo principal). */
     suspend fun load(ctx: Context, scope: BgScope): Bitmap? = withContext(Dispatchers.IO) {
@@ -75,7 +95,11 @@ object BackgroundStore {
             bitmap.recycle()
 
             val old = prefs(app).getString(scope.key, null)
-            prefs(app).edit().putString(scope.key, file.absolutePath).apply()
+            // Imagen nueva = modo Rellenar por defecto
+            prefs(app).edit()
+                .putString(scope.key, file.absolutePath)
+                .putString(scope.key + "_scale", BgMode.FILL.pref)
+                .apply()
             if (old != null && old != file.absolutePath) File(old).delete()
             _version.value = _version.value + 1
             true
@@ -90,7 +114,7 @@ object BackgroundStore {
     fun clear(ctx: Context, scope: BgScope) {
         val app = ctx.applicationContext
         val old = prefs(app).getString(scope.key, null)
-        prefs(app).edit().remove(scope.key).apply()
+        prefs(app).edit().remove(scope.key).remove(scope.key + "_scale").apply()
         try {
             if (old != null) File(old).delete()
         } catch (_: Exception) {

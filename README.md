@@ -108,3 +108,8 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 - Ajustes > Apariencia > **Fondo >** abre **Fondos** (Youtube [Inicio y Biblioteca], Música, Video Player, Ajustes). Tocar una abre el Photo Picker; mantener presionado quita el fondo.
 - `BackgroundStore.kt`: copia la imagen (≤1920 px, JPEG) a `filesDir/backgrounds/` y guarda la ruta en SharedPreferences `backgrounds` (clave por pantalla: youtube, music, video, settings).
 - `BackgroundLayer.kt`: imagen + capa negra al 60 %; sin imagen queda el fondo oscuro de siempre. Se usa en `AloTubeRoot` (por pestaña) y en `PlayerScreen` (música local → Música, video local → Video Player).
+
+### Fondos: modos de escalado
+- Mantener presionada una opción de Fondos abre un menú: **Rellenar** (`Crop`), **Estirar** (`FillBounds`), **Centrar** (`Fit`) y **Eliminar fondo** (rojo).
+- Se guarda en `backgrounds` junto a la ruta: `<pantalla>_scale` = `Crop` / `FillBounds` / `Fit`. Imagen nueva = `Crop`. Eliminar borra ruta, modo y el archivo.
+- ✓ junto al nombre en Fondos cuando esa pantalla ya tiene imagen.

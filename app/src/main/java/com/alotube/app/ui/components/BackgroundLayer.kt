@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
@@ -15,6 +16,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import com.alotube.app.data.local.BackgroundStore
+import com.alotube.app.data.local.BgMode
 import com.alotube.app.data.local.BgScope
 import com.alotube.app.ui.theme.AloColors
 
@@ -23,7 +25,7 @@ private const val DIM_ALPHA = 0.6f
 
 /**
  * Fondo de una pantalla: el oscuro de siempre y, si el usuario eligió una imagen para [scope],
- * esa imagen (recortada para cubrir) con una capa oscura semitransparente encima.
+ * esa imagen (según el modo guardado: Rellenar / Estirar / Centrar) con una capa oscura semitransparente encima.
  * Se dibuja DETRÁS del contenido (ponlo como primer hijo de un Box).
  */
 @Composable
@@ -33,13 +35,22 @@ fun BackgroundLayer(scope: BgScope?, modifier: Modifier = Modifier.fillMaxSize()
     val image by produceState<ImageBitmap?>(initialValue = null, scope, version) {
         value = if (scope == null) null else BackgroundStore.load(ctx, scope)?.asImageBitmap()
     }
+    // Modo de escalado guardado (se relee cada vez que cambia algún fondo)
+    val mode = remember(scope, version) {
+        if (scope == null) BgMode.FILL else BackgroundStore.mode(ctx, scope)
+    }
+    val contentScale = when (mode) {
+        BgMode.FILL -> ContentScale.Crop
+        BgMode.STRETCH -> ContentScale.FillBounds
+        BgMode.CENTER -> ContentScale.Fit
+    }
     Box(modifier = modifier.background(AloColors.Bg)) {
         val bitmap = image
         if (bitmap != null) {
             Image(
                 bitmap = bitmap,
                 contentDescription = null,
-                contentScale = ContentScale.Crop,
+                contentScale = contentScale,
                 modifier = Modifier.fillMaxSize()
             )
             Box(

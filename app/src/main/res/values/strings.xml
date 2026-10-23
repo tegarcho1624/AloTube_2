@@ -173,4 +173,10 @@
     <string name="bg_applied">Fondo aplicado</string>
     <string name="bg_removed">Fondo quitado</string>
     <string name="bg_error">No se pudo usar esa imagen</string>
+    <string name="bg_menu_title">Ajuste del fondo</string>
+    <string name="bg_mode_fill">Rellenar</string>
+    <string name="bg_mode_stretch">Estirar</string>
+    <string name="bg_mode_center">Centrar</string>
+    <string name="bg_delete">Eliminar fondo</string>
+    <string name="bg_pick_first">Primero elige una imagen (toque corto)</string>
 </resources>
