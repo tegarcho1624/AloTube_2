@@ -45,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -233,7 +234,8 @@ fun AudioPlayerContent(
             }
         }
 
-        // ---- Controles ----
+        // ---- Controles ---- (8 botones: en pantallas angostas se reducen un poco para que quepan)
+        val k = if (LocalConfiguration.current.screenWidthDp < 420) 0.85f else 1f
         Row(
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
@@ -247,17 +249,26 @@ fun AudioPlayerContent(
                 icon = R.drawable.ic_audio_more,
                 description = R.string.mp_more,
                 enabled = true,
-                size = 44.dp,
-                iconSize = 24.dp
+                size = 40.dp * k,
+                iconSize = 22.dp * k
             ) {
                 Toast.makeText(ctx, R.string.mp_more_soon, Toast.LENGTH_SHORT).show()
+            }
+            ControlButton(
+                icon = R.drawable.ic_audio_shuffle,
+                description = R.string.mp_shuffle,
+                enabled = true,
+                size = 40.dp * k,
+                iconSize = 22.dp * k
+            ) {
+                Toast.makeText(ctx, R.string.mp_soon, Toast.LENGTH_SHORT).show()
             }
             ControlButton(
                 icon = R.drawable.ic_audio_back10,
                 description = R.string.mp_back10,
                 enabled = durationMs > 0,
-                size = 48.dp,
-                iconSize = 26.dp
+                size = 44.dp * k,
+                iconSize = 24.dp * k
             ) {
                 player.seekTo((player.currentPosition - SKIP_MS).coerceAtLeast(0L))
             }
@@ -265,15 +276,15 @@ fun AudioPlayerContent(
                 icon = R.drawable.ic_mini_prev,
                 description = R.string.mp_prev,
                 enabled = true,
-                size = 56.dp,
-                iconSize = 30.dp
+                size = 50.dp * k,
+                iconSize = 28.dp * k
             ) {
                 player.seekToPrevious()
             }
             // Play / Pausa grande, con el acento dinámico
             Box(
                 modifier = Modifier
-                    .size(76.dp)
+                    .size(72.dp * k)
                     .clip(CircleShape)
                     .background(accents.accent)
                     .clickable {
@@ -290,15 +301,15 @@ fun AudioPlayerContent(
                     painter = painterResource(if (playing) R.drawable.ic_mini_pause else R.drawable.ic_mini_play),
                     contentDescription = stringResource(if (playing) R.string.mp_pause else R.string.mp_play),
                     tint = AloColors.Bg,
-                    modifier = Modifier.size(38.dp)
+                    modifier = Modifier.size(38.dp * k)
                 )
             }
             ControlButton(
                 icon = R.drawable.ic_mini_next,
                 description = R.string.mp_next,
                 enabled = queue.hasNext,
-                size = 56.dp,
-                iconSize = 30.dp
+                size = 50.dp * k,
+                iconSize = 28.dp * k
             ) {
                 player.seekToNext()
             }
@@ -306,20 +317,20 @@ fun AudioPlayerContent(
                 icon = R.drawable.ic_audio_fwd10,
                 description = R.string.mp_fwd10,
                 enabled = durationMs > 0,
-                size = 48.dp,
-                iconSize = 26.dp
+                size = 44.dp * k,
+                iconSize = 24.dp * k
             ) {
                 val end = if (durationMs > 0) durationMs else Long.MAX_VALUE
                 player.seekTo((player.currentPosition + SKIP_MS).coerceAtMost(end))
             }
             ControlButton(
-                icon = R.drawable.ic_audio_queue,
-                description = R.string.mp_queue,
+                icon = R.drawable.ic_audio_repeat,
+                description = R.string.mp_repeat,
                 enabled = true,
-                size = 44.dp,
-                iconSize = 24.dp
+                size = 40.dp * k,
+                iconSize = 22.dp * k
             ) {
-                Toast.makeText(ctx, R.string.mp_queue_soon, Toast.LENGTH_SHORT).show()
+                Toast.makeText(ctx, R.string.mp_soon, Toast.LENGTH_SHORT).show()
             }
         }
 

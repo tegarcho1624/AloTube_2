@@ -57,6 +57,7 @@ fun MiniPlayerHost(onOpen: (List<VideoItem>, Int) -> Unit) {
         hasNext = now.hasNext,
         onOpen = { onOpen(queue.items, queue.index) },
         onToggle = { LocalAudioController.togglePlayPause() },
+        onPrevious = { LocalAudioController.previous(ctx) },
         onNext = { LocalAudioController.next(ctx) }
     )
 }
@@ -68,6 +69,7 @@ private fun MiniPlayer(
     hasNext: Boolean,
     onOpen: () -> Unit,
     onToggle: () -> Unit,
+    onPrevious: () -> Unit,
     onNext: () -> Unit
 ) {
     val ctx = LocalContext.current
@@ -117,6 +119,14 @@ private fun MiniPlayer(
                     contentDescription = stringResource(if (isPlaying) R.string.mp_pause else R.string.mp_play),
                     tint = accents.accent,
                     modifier = Modifier.size(30.dp)
+                )
+            }
+            IconButton(onClick = onPrevious) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_mini_prev),
+                    contentDescription = stringResource(R.string.mp_prev),
+                    tint = AloColors.Ink,
+                    modifier = Modifier.size(26.dp)
                 )
             }
             IconButton(onClick = onNext, enabled = hasNext) {

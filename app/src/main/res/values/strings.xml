@@ -184,4 +184,7 @@
     <string name="font_import">Importar fuente</string>
     <string name="font_imported">Fuente importada</string>
     <string name="font_invalid">Ese archivo no es una fuente válida (.ttf o .otf)</string>
+    <string name="mp_shuffle">Barajear lista</string>
+    <string name="mp_repeat">Repetir lista</string>
+    <string name="mp_soon">Próximamente</string>
 </resources>

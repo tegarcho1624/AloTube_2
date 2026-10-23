@@ -121,3 +121,11 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 
 ### Fondos: propagación a sub-pantallas
 - `AppBackground(scope) { ... }` (en `BackgroundLayer.kt`): envoltorio reutilizable; la pantalla de dentro debe ir transparente. Se usa en el Canal; el detalle del video de YouTube usa el fondo "Youtube"; todo el submenú de Ajustes (menú, Apariencia, Video y audio, Fondos, Estilo de Escritura, etc.) usa el fondo "Ajustes".
+
+### Controles de audio (v2)
+- Mini-reproductor: [Play/Pausa] [Anterior] [Siguiente]. Anterior reinicia la canción si llevas >3 s (o es la primera) y si no pasa a la anterior de la cola (`LocalAudioController.previous`).
+- Pantalla completa: `⋮  Shuffle  −10s  ◀  PLAY  ▶  +10s  Repeat`. Se eliminó el botón de cola. ⋮, Shuffle y Repeat solo muestran un Toast ("Próximamente").
+
+### Controles de audio: fila de 8 y mini-reproductor
+- Pantalla completa: `⋮  Barajear  −10 s  ◀  PLAY  ▶  +10 s  Repetir`. Barajear y Repetir solo muestran el aviso "Próximamente" (no tocan el ExoPlayer). Se quitó el botón de Cola. En pantallas < 420 dp los botones se reducen un poco para que quepan.
+- Mini-reproductor: `Play/Pausa  Anterior  Siguiente`. Anterior usa `LocalAudioController.previous` (más de 3 s o primera canción: reinicia; si no, pasa a la anterior de la cola).

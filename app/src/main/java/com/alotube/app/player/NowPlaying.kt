@@ -86,6 +86,25 @@ object LocalAudioController {
     /** Pasa a la siguiente canción de la cola y, si no hay pantalla completa, la carga aquí. */
     fun next(ctx: Context) {
         if (!PlaybackQueue.next()) return
+        loadCurrent(ctx)
+    }
+
+    /**
+     * Canción anterior (mismo criterio que el botón de la pantalla completa): si llevas más de 3 s o es la
+     * primera, reinicia la canción; si no, pasa a la anterior de la cola.
+     */
+    fun previous(ctx: Context) {
+        val player = PlayerProvider.instance
+        if (player != null && (player.currentPosition > 3_000L || !PlaybackQueue.state.value.hasPrevious)) {
+            player.seekTo(0)
+            return
+        }
+        if (!PlaybackQueue.previous()) return
+        loadCurrent(ctx)
+    }
+
+    /** Carga aquí la canción actual de la cola si no hay pantalla completa abierta (ella la carga sola). */
+    private fun loadCurrent(ctx: Context) {
         if (PlayerProvider.owner != null) return // la pantalla completa abierta la carga
         val item = PlaybackQueue.state.value.current ?: return
         if (!isLocalAudioUrl(item.url)) return
