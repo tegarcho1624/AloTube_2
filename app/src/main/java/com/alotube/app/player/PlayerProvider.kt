@@ -53,6 +53,8 @@ object PlayerProvider {
              * (carpeta actual). La cola vive en PlaybackQueue (el player carga una canción a la vez),
              * así que se avanza con LocalAudioController.next, que carga la siguiente aquí o deja
              * que lo haga la pantalla completa si está abierta. Si era la última, se detiene.
+             * Barajear / Repetir (PlaybackQueue): "Repetir canción" reinicia la misma; "Repetir lista" vuelve a la
+             * primera tras la última (lo resuelve PlaybackQueue.next).
              * Solo música local: videos y YouTube no cambian.
              */
             override fun onPlaybackStateChanged(playbackState: Int) {
@@ -62,7 +64,16 @@ object PlayerProvider {
                 // Que lo que terminó sea la canción actual de la cola (no un evento viejo)
                 val playing = player.currentMediaItem?.localConfiguration?.uri?.toString()
                 if (playing != current.url) return
-                if (!PlaybackQueue.state.value.hasNext) return
+                val queue = PlaybackQueue.state.value
+                // Repetir canción, o Repetir lista con una sola canción: se vuelve a empezar la misma
+                if (queue.repeat == Player.REPEAT_MODE_ONE ||
+                    (queue.repeat == Player.REPEAT_MODE_ALL && queue.items.size <= 1)
+                ) {
+                    player.seekTo(0)
+                    player.play()
+                    return
+                }
+                if (!queue.hasNext) return
                 LocalAudioController.next(app)
             }
 

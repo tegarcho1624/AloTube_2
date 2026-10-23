@@ -70,7 +70,7 @@ private const val SKIP_MS = 10_000L
 /**
  * Pantalla de reproducción de MÚSICA local: carátula, título / artista / álbum, barra de progreso,
  * controles (anterior, -10 s, play/pausa, +10 s, siguiente) y, más abajo, Emergente / Compartir.
- * Solo es interfaz: todo se hace con los métodos normales del [Player] (la lógica no cambia).
+ * Los controles de reproducción usan los métodos normales del [Player]; Barajear y Repetir se guardan en [PlaybackQueue].
  * Se desplaza si no cabe en la pantalla.
  */
 @Composable
@@ -112,8 +112,7 @@ fun AudioPlayerContent(
         modifier = modifier
             .fillMaxSize()
             .safeDrawingPadding()
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .verticalScroll(rememberScrollState())
     ) {
         IconButton(onClick = onBack, modifier = Modifier.padding(start = 4.dp, top = 4.dp)) {
             Icon(
@@ -239,7 +238,8 @@ fun AudioPlayerContent(
         val k = if (LocalConfiguration.current.screenWidthDp < 420) 0.85f else 1f
         Row(
             modifier = Modifier
-                .widthIn(max = 500.dp) // en tablet los botones quedan agrupados en el centro
+                .align(Alignment.CenterHorizontally)
+                .widthIn(max = 560.dp)
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -254,14 +254,16 @@ fun AudioPlayerContent(
             ) {
                 Toast.makeText(ctx, R.string.mp_more_soon, Toast.LENGTH_SHORT).show()
             }
+            // Barajear: activado = acento dinámico; desactivado = gris
             ControlButton(
                 icon = R.drawable.ic_audio_shuffle,
                 description = R.string.mp_shuffle,
                 enabled = true,
                 size = 40.dp * k,
-                iconSize = 22.dp * k
+                iconSize = 22.dp * k,
+                tint = if (queue.shuffle) accents.accent else AloColors.Mut
             ) {
-                Toast.makeText(ctx, R.string.mp_soon, Toast.LENGTH_SHORT).show()
+                PlaybackQueue.setShuffle(!queue.shuffle)
             }
             ControlButton(
                 icon = R.drawable.ic_audio_back10,
@@ -323,14 +325,21 @@ fun AudioPlayerContent(
                 val end = if (durationMs > 0) durationMs else Long.MAX_VALUE
                 player.seekTo((player.currentPosition + SKIP_MS).coerceAtMost(end))
             }
+            // Repetir (un botón, 3 estados): inactivo (gris) -> lista (acento) -> canción (acento, con "1")
             ControlButton(
-                icon = R.drawable.ic_audio_repeat,
-                description = R.string.mp_repeat,
+                icon = if (queue.repeat == Player.REPEAT_MODE_ONE) R.drawable.ic_audio_repeat_one else R.drawable.ic_audio_repeat,
+                description = if (queue.repeat == Player.REPEAT_MODE_ONE) R.string.mp_repeat_one else R.string.mp_repeat,
                 enabled = true,
                 size = 40.dp * k,
-                iconSize = 22.dp * k
+                iconSize = 22.dp * k,
+                tint = if (queue.repeat == Player.REPEAT_MODE_OFF) AloColors.Mut else accents.accent
             ) {
-                Toast.makeText(ctx, R.string.mp_soon, Toast.LENGTH_SHORT).show()
+                val toast = when (PlaybackQueue.cycleRepeat()) {
+                    Player.REPEAT_MODE_ALL -> R.string.mp_repeat_all_on
+                    Player.REPEAT_MODE_ONE -> R.string.mp_repeat_one_on
+                    else -> R.string.mp_repeat_off
+                }
+                Toast.makeText(ctx, toast, Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -354,6 +363,7 @@ private fun ControlButton(
     enabled: Boolean,
     size: androidx.compose.ui.unit.Dp,
     iconSize: androidx.compose.ui.unit.Dp,
+    tint: Color? = null,
     onClick: () -> Unit
 ) {
     val accents = MaterialTheme.accents
@@ -361,7 +371,7 @@ private fun ControlButton(
         Icon(
             painter = painterResource(icon),
             contentDescription = stringResource(description),
-            tint = if (enabled) accents.hi else AloColors.Mut.copy(alpha = 0.4f),
+            tint = if (enabled) (tint ?: accents.hi) else AloColors.Mut.copy(alpha = 0.4f),
             modifier = Modifier.size(iconSize)
         )
     }

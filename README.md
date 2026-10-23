@@ -134,5 +134,12 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 - Mini-reproductor: `Anterior  Play/Pausa  Siguiente`.
 - `PlayerProvider`: `onPlaybackStateChanged` con `STATE_ENDED` en música local avanza a la siguiente de la cola (`LocalAudioController.next`); si era la última, se detiene. La cola es `PlaybackQueue` (el ExoPlayer carga una canción a la vez), así que no se precarga toda la lista de `MediaItem`.
 
-### Alineación de la fila de controles
-- La columna principal de `AudioPlayerScreen` usa `horizontalAlignment = CenterHorizontally` y la fila de 8 botones ocupa el ancho hasta un máximo de 500 dp (`widthIn(max = 500.dp)`, `SpaceEvenly`), centrada.
+### Barajear y Repetir (pantalla de música local)
+- Los botones **Barajear** y **Repetir** de `AudioPlayerScreen` ya funcionan (antes solo mostraban "Próximamente").
+- El estado vive en `PlaybackQueue` (`QueueState.shuffle`, `QueueState.repeat`, más el orden barajeado `order` / `orderPos`), porque el ExoPlayer carga una canción a la vez y no tiene lista propia. Al ser un objeto de la app, se conserva al cambiar de canción y al cerrar/abrir la pantalla completa mientras la app siga viva. Solo actúa con **música local**; con YouTube la cola funciona como siempre.
+- **Barajear**: al activarlo, la canción actual queda primera y el resto se ordena al azar; Siguiente/Anterior siguen ese orden (sin repetir canciones hasta agotarlo). Al desactivarlo vuelve el orden de la carpeta. Icono gris = apagado, acento dinámico = encendido.
+- **Repetir** (un botón, 3 estados): Inactivo (gris) → Repetir lista (acento) → Repetir canción (acento, ícono con "1", `ic_audio_repeat_one.xml`) → Inactivo. Cada cambio muestra un Toast.
+  - Repetir lista: tras la última canción (o el final del orden barajeado) vuelve a empezar; Siguiente también queda habilitado en la última.
+  - Repetir canción: al terminar, `PlayerProvider` reinicia la misma (Siguiente/Anterior manuales siguen avanzando).
+- Sin cambios: Play/Pausa, ±10 s, Siguiente y Anterior (los botones llaman a los mismos métodos del `Player`; solo `PlaybackQueue.next/previous` tienen en cuenta los modos).
+- Textos nuevos: `mp_repeat_one`, `mp_repeat_all_on`, `mp_repeat_one_on`, `mp_repeat_off`. `versionCode` 18.

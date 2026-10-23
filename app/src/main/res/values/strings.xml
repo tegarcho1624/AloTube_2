@@ -187,4 +187,8 @@
     <string name="mp_shuffle">Barajear lista</string>
     <string name="mp_repeat">Repetir lista</string>
     <string name="mp_soon">Próximamente</string>
+    <string name="mp_repeat_one">Repetir canción</string>
+    <string name="mp_repeat_all_on">Repetir lista activado</string>
+    <string name="mp_repeat_one_on">Repetir canción activado</string>
+    <string name="mp_repeat_off">Repetición desactivada</string>
 </resources>
