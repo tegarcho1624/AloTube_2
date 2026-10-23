@@ -239,6 +239,7 @@ fun AudioPlayerContent(
         val k = if (LocalConfiguration.current.screenWidthDp < 420) 0.85f else 1f
         Row(
             modifier = Modifier
+                .widthIn(max = 500.dp) // en tablet los botones quedan agrupados en el centro
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
