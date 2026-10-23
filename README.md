@@ -129,3 +129,7 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 ### Controles de audio: fila de 8 y mini-reproductor
 - Pantalla completa: `⋮  Barajear  −10 s  ◀  PLAY  ▶  +10 s  Repetir`. Barajear y Repetir solo muestran el aviso "Próximamente" (no tocan el ExoPlayer). Se quitó el botón de Cola. En pantallas < 420 dp los botones se reducen un poco para que quepan.
 - Mini-reproductor: `Play/Pausa  Anterior  Siguiente`. Anterior usa `LocalAudioController.previous` (más de 3 s o primera canción: reinicia; si no, pasa a la anterior de la cola).
+
+### Autoplay de música y orden del mini-reproductor
+- Mini-reproductor: `Anterior  Play/Pausa  Siguiente`.
+- `PlayerProvider`: `onPlaybackStateChanged` con `STATE_ENDED` en música local avanza a la siguiente de la cola (`LocalAudioController.next`); si era la última, se detiene. La cola es `PlaybackQueue` (el ExoPlayer carga una canción a la vez), así que no se precarga toda la lista de `MediaItem`.

@@ -48,6 +48,24 @@ object PlayerProvider {
             .build()
 
         player.addListener(object : Player.Listener {
+            /**
+             * Autoplay de música local: al terminar una canción pasa a la siguiente de la cola
+             * (carpeta actual). La cola vive en PlaybackQueue (el player carga una canción a la vez),
+             * así que se avanza con LocalAudioController.next, que carga la siguiente aquí o deja
+             * que lo haga la pantalla completa si está abierta. Si era la última, se detiene.
+             * Solo música local: videos y YouTube no cambian.
+             */
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                if (playbackState != Player.STATE_ENDED) return
+                val current = PlaybackQueue.state.value.current ?: return
+                if (!isLocalAudioUrl(current.url)) return
+                // Que lo que terminó sea la canción actual de la cola (no un evento viejo)
+                val playing = player.currentMediaItem?.localConfiguration?.uri?.toString()
+                if (playing != current.url) return
+                if (!PlaybackQueue.state.value.hasNext) return
+                LocalAudioController.next(app)
+            }
+
             override fun onPlaybackSuppressionReasonChanged(playbackSuppressionReason: Int) {
                 // Pérdida breve de foco: ExoPlayer reanuda solo al volver el foco.
                 // Si el usuario no quiere reanudación automática, se convierte en una pausa normal.

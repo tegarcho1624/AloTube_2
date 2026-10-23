@@ -113,20 +113,20 @@ private fun MiniPlayer(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            IconButton(onClick = onToggle) {
-                Icon(
-                    painter = painterResource(if (isPlaying) R.drawable.ic_mini_pause else R.drawable.ic_mini_play),
-                    contentDescription = stringResource(if (isPlaying) R.string.mp_pause else R.string.mp_play),
-                    tint = accents.accent,
-                    modifier = Modifier.size(30.dp)
-                )
-            }
             IconButton(onClick = onPrevious) {
                 Icon(
                     painter = painterResource(R.drawable.ic_mini_prev),
                     contentDescription = stringResource(R.string.mp_prev),
                     tint = AloColors.Ink,
                     modifier = Modifier.size(26.dp)
+                )
+            }
+            IconButton(onClick = onToggle) {
+                Icon(
+                    painter = painterResource(if (isPlaying) R.drawable.ic_mini_pause else R.drawable.ic_mini_play),
+                    contentDescription = stringResource(if (isPlaying) R.string.mp_pause else R.string.mp_play),
+                    tint = accents.accent,
+                    modifier = Modifier.size(30.dp)
                 )
             }
             IconButton(onClick = onNext, enabled = hasNext) {
