@@ -1,6 +1,7 @@
 package com.alotube.app.ui.screens
 
 import android.graphics.Bitmap
+import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
@@ -44,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -83,6 +85,7 @@ fun AudioPlayerContent(
     modifier: Modifier = Modifier
 ) {
     val accents = MaterialTheme.accents
+    val ctx = LocalContext.current
     val queue by PlaybackQueue.state.collectAsState()
 
     var playing by remember { mutableStateOf(player.isPlaying || player.playWhenReady) }
@@ -235,10 +238,21 @@ fun AudioPlayerContent(
         Row(
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
-                .padding(vertical = 12.dp),
+                .widthIn(max = 560.dp)
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.SpaceEvenly
         ) {
+            ControlButton(
+                icon = R.drawable.ic_audio_more,
+                description = R.string.mp_more,
+                enabled = true,
+                size = 44.dp,
+                iconSize = 24.dp
+            ) {
+                Toast.makeText(ctx, R.string.mp_more_soon, Toast.LENGTH_SHORT).show()
+            }
             ControlButton(
                 icon = R.drawable.ic_audio_back10,
                 description = R.string.mp_back10,
@@ -298,6 +312,15 @@ fun AudioPlayerContent(
             ) {
                 val end = if (durationMs > 0) durationMs else Long.MAX_VALUE
                 player.seekTo((player.currentPosition + SKIP_MS).coerceAtMost(end))
+            }
+            ControlButton(
+                icon = R.drawable.ic_audio_queue,
+                description = R.string.mp_queue,
+                enabled = true,
+                size = 44.dp,
+                iconSize = 24.dp
+            ) {
+                Toast.makeText(ctx, R.string.mp_queue_soon, Toast.LENGTH_SHORT).show()
             }
         }
 
