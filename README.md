@@ -99,3 +99,7 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 - `LocalMediaRepository`: MediaStore (Video/Audio), por defecto solo `Download/`; interruptor para ver todo el dispositivo.
 - Pestañas Videos / Audios con HorizontalPager; miniaturas con ContentResolver.loadThumbnail.
 - Reproducción: el mismo `PlayerActivity`; la "url" es el content:// URI (PlayerViewModel lo reconoce y no usa NewPipeExtractor).
+
+### Pantalla de reproducción de música
+- `AudioPlayerScreen.kt` (`AudioPlayerContent`): carátula grande, título / artista / álbum, barra de progreso con tiempo actual y total, controles (anterior, −10 s, play/pausa, +10 s, siguiente) en el acento dinámico; Emergente y Compartir quedan más abajo. Se desplaza si no cabe. Solo usa los métodos normales del `Player`.
+- `OpusTagsReader.kt`: respaldo que lee las etiquetas y la carátula de archivos `.opus` cuando `MediaMetadataRetriever` no las entrega.

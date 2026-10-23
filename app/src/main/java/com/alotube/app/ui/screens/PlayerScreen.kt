@@ -205,14 +205,21 @@ fun PlayerScreen(
             .background(cs.background)
     ) {
         val expanded = isFullscreen || inPip || error != null
-        // Música: el área es más alta (cuadrada) para que quepa la carátula
-        val videoHeight = if (isLocalAudio) {
-            minOf(maxWidth, maxHeight * 0.6f)
-        } else {
-            minOf(maxWidth * 9f / 16f, maxHeight * 0.55f)
-        }
+        val videoHeight = minOf(maxWidth * 9f / 16f, maxHeight * 0.55f)
 
-        Column(modifier = Modifier.fillMaxSize()) {
+        if (isLocalAudio && error == null && !inPip) {
+            // Música local: pantalla propia con controles (anterior, play/pausa, siguiente, seekbar)
+            AudioPlayerContent(
+                player = exoPlayer,
+                title = audioInfo?.title ?: state.title,
+                artist = audioInfo?.artist.orEmpty(),
+                album = audioInfo?.album,
+                cover = bigCover ?: audioInfo?.cover,
+                isLoading = state.isLoading,
+                actions = actions,
+                onBack = onBack
+            )
+        } else Column(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = if (expanded) {
                     Modifier.fillMaxSize()
@@ -280,25 +287,6 @@ fun PlayerScreen(
                         update = { it.useController = !inPip },
                         onRelease = { it.player = null }
                     )
-
-                    // Carátula (o nota musical con el acento) en el centro, entre la barra superior y los controles
-                    if (isLocalAudio && !inPip) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(start = 16.dp, end = 16.dp, top = 56.dp, bottom = 88.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            AudioCover(
-                                bitmap = bigCover ?: audioInfo?.cover,
-                                iconSize = 72.dp,
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .aspectRatio(1f)
-                                    .clip(RoundedCornerShape(20.dp))
-                            )
-                        }
-                    }
 
                     if (state.isLoading) {
                         CircularProgressIndicator(
@@ -375,14 +363,10 @@ fun PlayerScreen(
 
             if (!expanded) {
                 WatchInfo(
-                    title = if (isLocalAudio) audioInfo?.title ?: state.title else state.title,
-                    author = if (isLocalAudio) audioInfo?.artist.orEmpty() else state.author,
-                    meta = if (isLocalAudio) {
-                        audioInfo?.album.orEmpty()
-                    } else {
-                        listOfNotNull(formatViews(state.viewCount), state.uploadDate)
-                            .joinToString(" · ")
-                    },
+                    title = state.title,
+                    author = state.author,
+                    meta = listOfNotNull(formatViews(state.viewCount), state.uploadDate)
+                        .joinToString(" · "),
                     likes = formatCount(state.likeCount),
                     actions = actions,
                     modifier = Modifier.weight(1f)

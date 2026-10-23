@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import java.io.BufferedInputStream
 
 /**
  * Etiquetas de un audio. [title] nunca está vacío (si el archivo no trae título se usa el nombre del
@@ -97,6 +98,23 @@ object AudioMetadataRepository {
             try {
                 retriever.release()
             } catch (_: Exception) {
+            }
+        }
+
+        // Respaldo para .opus: en algunos dispositivos MediaMetadataRetriever no lee sus etiquetas
+        val missingTags = title.isNullOrBlank() && artist.isNullOrBlank() && album.isNullOrBlank()
+        if (missingTags || cover == null) {
+            try {
+                ctx.contentResolver.openInputStream(uri)?.use { stream ->
+                    OpusTagsReader.read(BufferedInputStream(stream))?.let { tags ->
+                        if (title.isNullOrBlank()) title = tags.title
+                        if (artist.isNullOrBlank()) artist = tags.artist
+                        if (album.isNullOrBlank()) album = tags.album
+                        if (cover == null) tags.picture?.let { cover = decodeScaled(it, coverPx) }
+                    }
+                }
+            } catch (_: Exception) {
+                // Sin acceso al archivo: se siguen usando los valores por defecto
             }
         }
 

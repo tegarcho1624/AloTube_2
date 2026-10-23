@@ -156,4 +156,8 @@
     <string name="mp_play">Reproducir</string>
     <string name="mp_pause">Pausa</string>
     <string name="mp_next">Siguiente</string>
+    <string name="mp_prev">Anterior</string>
+    <string name="mp_back10">Retroceder 10 segundos</string>
+    <string name="mp_fwd10">Avanzar 10 segundos</string>
+    <string name="mp_seek">Posición</string>
 </resources>
