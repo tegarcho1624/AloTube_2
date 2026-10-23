@@ -24,6 +24,19 @@ import com.alotube.app.ui.theme.AloColors
 private const val DIM_ALPHA = 0.6f
 
 /**
+ * Envoltorio reutilizable: cualquier pantalla nueva que se ponga dentro hereda el fondo elegido para [scope]
+ * (imagen + capa oscura, o el oscuro de siempre). La pantalla interior debe tener fondo transparente
+ * (Scaffold con containerColor = Color.Transparent, sin .background(...) sólido).
+ */
+@Composable
+fun AppBackground(scope: BgScope?, modifier: Modifier = Modifier.fillMaxSize(), content: @Composable () -> Unit) {
+    Box(modifier = modifier) {
+        BackgroundLayer(scope)
+        content()
+    }
+}
+
+/**
  * Fondo de una pantalla: el oscuro de siempre y, si el usuario eligió una imagen para [scope],
  * esa imagen (según el modo guardado: Rellenar / Estirar / Centrar) con una capa oscura semitransparente encima.
  * Se dibuja DETRÁS del contenido (ponlo como primer hijo de un Box).

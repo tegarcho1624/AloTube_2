@@ -163,7 +163,6 @@ fun BackgroundsScreen(onBack: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AloColors.Bg)
     ) {
         SettingsTopBar(stringResource(R.string.bg_title), onBack)
         Item(R.string.bg_youtube, BgScope.YOUTUBE)

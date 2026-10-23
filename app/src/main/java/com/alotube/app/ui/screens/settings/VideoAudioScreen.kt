@@ -36,7 +36,6 @@ fun VideoAudioScreen(onBack: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AloColors.Bg)
     ) {
         SettingsTopBar(stringResource(R.string.set_video_audio), onBack)
 

@@ -15,7 +15,6 @@ fun SettingsMenuScreen(onBack: () -> Unit, onNavigate: (String) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AloColors.Bg)
     ) {
         SettingsTopBar(stringResource(R.string.settings_item_settings), onBack)
         SettingsRow(R.drawable.ic_act_headphones, stringResource(R.string.set_video_audio)) {
@@ -42,7 +41,6 @@ fun SettingsPlaceholderScreen(title: String, onBack: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AloColors.Bg)
     ) {
         SettingsTopBar(title, onBack)
         SettingsSoon()

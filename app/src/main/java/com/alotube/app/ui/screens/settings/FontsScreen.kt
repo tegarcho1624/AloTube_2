@@ -71,7 +71,6 @@ fun FontsScreen(onBack: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AloColors.Bg)
     ) {
         Row(
             modifier = Modifier

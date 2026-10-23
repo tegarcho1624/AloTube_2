@@ -118,3 +118,6 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 - Apariencia: Fondo > / **Estilo de Escritura (Estilos >)** / Color de acento. La pantalla de fuentes lista las de `assets/fonts/`, las importadas (`files/fonts/`) y 5 del sistema, cada nombre (sin extensión) en su propia tipografía; ✓ en la elegida; "+" importa .ttf/.otf.
 - Se guarda en `settings`, clave `font` (`sys:*` o `file:Nombre.ttf`), igual que Alouncher. `FontLoader.version` hace que `AloTubeTheme` reconstruya la tipografía de toda la app al instante.
 - Sin elección: primera fuente de `assets/fonts/` (como antes) o la del sistema. Archivo borrado/dañado: vuelve a ese valor por defecto sin errores. Archivo no válido al importar: Toast.
+
+### Fondos: propagación a sub-pantallas
+- `AppBackground(scope) { ... }` (en `BackgroundLayer.kt`): envoltorio reutilizable; la pantalla de dentro debe ir transparente. Se usa en el Canal; el detalle del video de YouTube usa el fondo "Youtube"; todo el submenú de Ajustes (menú, Apariencia, Video y audio, Fondos, Estilo de Escritura, etc.) usa el fondo "Ajustes".

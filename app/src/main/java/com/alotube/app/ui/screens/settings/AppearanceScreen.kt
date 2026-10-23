@@ -142,7 +142,6 @@ fun AppearanceScreen(onBack: () -> Unit, onAccentChanged: () -> Unit, onOpenBack
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AloColors.Bg)
     ) {
         SettingsTopBar(stringResource(R.string.set_appearance), onBack)
 

@@ -206,12 +206,12 @@ fun PlayerScreen(
             .fillMaxSize()
             .background(cs.background)
     ) {
-        // Fondo elegido: música local -> "Música"; video local -> "Video Player" (YouTube no lleva)
+        // Fondo elegido: música local -> "Música"; video local -> "Video Player"; YouTube -> "Youtube"
         BackgroundLayer(
             scope = when {
                 isLocalAudio -> BgScope.MUSIC
                 isLocal -> BgScope.VIDEO
-                else -> null
+                else -> BgScope.YOUTUBE
             }
         )
         val expanded = isFullscreen || inPip || error != null

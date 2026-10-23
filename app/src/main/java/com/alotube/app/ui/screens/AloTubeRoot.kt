@@ -18,6 +18,7 @@ import com.alotube.app.R
 import com.alotube.app.data.model.VideoItem
 import com.alotube.app.data.local.BgScope
 import com.alotube.app.ui.components.AloNavBar
+import com.alotube.app.ui.components.AppBackground
 import com.alotube.app.ui.components.BackgroundLayer
 import com.alotube.app.ui.components.MiniPlayerHost
 import com.alotube.app.ui.theme.AloColors
@@ -78,12 +79,15 @@ fun AloTubeRoot(
         }
 
         channelUrl?.let { url ->
-            ChannelScreen(
-                channelUrl = url,
-                initialName = channelName,
-                onBack = { channelUrl = null },
-                onVideoClick = onVideoClick
-            )
+            // Canal: mismo fondo que Inicio y Biblioteca (la pantalla va transparente encima)
+            AppBackground(BgScope.YOUTUBE) {
+                ChannelScreen(
+                    channelUrl = url,
+                    initialName = channelName,
+                    onBack = { channelUrl = null },
+                    onVideoClick = onVideoClick
+                )
+            }
         }
     }
 }

@@ -100,7 +100,6 @@ fun ChannelScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AloColors.Bg)
             // Esta pantalla va encima de la otra: se evita que los toques "atraviesen"
             .pointerInput(Unit) { detectTapGestures { } }
             .statusBarsPadding()
@@ -208,7 +207,7 @@ private fun ChannelContent(
     )
     TabRow(
         selectedTabIndex = tab,
-        containerColor = AloColors.Bg,
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
         contentColor = accents.hi,
         divider = { HorizontalDivider(color = AloColors.Ln) }
     ) {
