@@ -31,6 +31,7 @@ object SettingsRoutes {
     const val MAIN = "settings_main"
     const val MENU = "settings_menu"
     const val APPEARANCE = "settings_appearance"
+    const val FONTS = "settings_fonts"
     const val BACKGROUNDS = "settings_backgrounds"
     const val VIDEO_AUDIO = "settings_video_audio"
     const val HISTORY = "settings_history"

@@ -179,4 +179,9 @@
     <string name="bg_mode_center">Centrar</string>
     <string name="bg_delete">Eliminar fondo</string>
     <string name="bg_pick_first">Primero elige una imagen (toque corto)</string>
+    <string name="set_font_style">Estilo de Escritura</string>
+    <string name="set_font_styles">Estilos</string>
+    <string name="font_import">Importar fuente</string>
+    <string name="font_imported">Fuente importada</string>
+    <string name="font_invalid">Ese archivo no es una fuente válida (.ttf o .otf)</string>
 </resources>

@@ -59,7 +59,7 @@ import com.alotube.app.ui.theme.accents
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun AppearanceScreen(onBack: () -> Unit, onAccentChanged: () -> Unit, onOpenBackgrounds: () -> Unit) {
+fun AppearanceScreen(onBack: () -> Unit, onAccentChanged: () -> Unit, onOpenBackgrounds: () -> Unit, onOpenFonts: () -> Unit) {
     val ctx = LocalContext.current
     val haptics = LocalHapticFeedback.current
 
@@ -165,6 +165,36 @@ fun AppearanceScreen(onBack: () -> Unit, onAccentChanged: () -> Unit, onOpenBack
                 contentDescription = null,
                 tint = AloColors.Mut,
                 modifier = Modifier.size(20.dp)
+            )
+        }
+        HorizontalDivider(color = AloColors.Ln)
+
+        // Estilo de Escritura   Estilos >
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onOpenFonts)
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.set_font_style),
+                style = MaterialTheme.typography.titleMedium,
+                color = AloColors.Ink,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = stringResource(R.string.set_font_styles),
+                style = MaterialTheme.typography.bodyMedium,
+                color = AloColors.Mut
+            )
+            Icon(
+                painter = painterResource(R.drawable.ic_chevron_right),
+                contentDescription = null,
+                tint = AloColors.Mut,
+                modifier = Modifier
+                    .padding(start = 4.dp)
+                    .size(20.dp)
             )
         }
         HorizontalDivider(color = AloColors.Ln)

@@ -113,3 +113,8 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 - Mantener presionada una opción de Fondos abre un menú: **Rellenar** (`Crop`), **Estirar** (`FillBounds`), **Centrar** (`Fit`) y **Eliminar fondo** (rojo).
 - Se guarda en `backgrounds` junto a la ruta: `<pantalla>_scale` = `Crop` / `FillBounds` / `Fit`. Imagen nueva = `Crop`. Eliminar borra ruta, modo y el archivo.
 - ✓ junto al nombre en Fondos cuando esa pantalla ya tiene imagen.
+
+## Estilo de Escritura (fuentes)
+- Apariencia: Fondo > / **Estilo de Escritura (Estilos >)** / Color de acento. La pantalla de fuentes lista las de `assets/fonts/`, las importadas (`files/fonts/`) y 5 del sistema, cada nombre (sin extensión) en su propia tipografía; ✓ en la elegida; "+" importa .ttf/.otf.
+- Se guarda en `settings`, clave `font` (`sys:*` o `file:Nombre.ttf`), igual que Alouncher. `FontLoader.version` hace que `AloTubeTheme` reconstruya la tipografía de toda la app al instante.
+- Sin elección: primera fuente de `assets/fonts/` (como antes) o la del sistema. Archivo borrado/dañado: vuelve a ese valor por defecto sin errores. Archivo no válido al importar: Toast.
