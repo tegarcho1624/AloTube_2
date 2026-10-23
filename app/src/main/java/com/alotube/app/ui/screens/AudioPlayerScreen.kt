@@ -112,7 +112,8 @@ fun AudioPlayerContent(
         modifier = modifier
             .fillMaxSize()
             .safeDrawingPadding()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         IconButton(onClick = onBack, modifier = Modifier.padding(start = 4.dp, top = 4.dp)) {
             Icon(
@@ -238,8 +239,6 @@ fun AudioPlayerContent(
         val k = if (LocalConfiguration.current.screenWidthDp < 420) 0.85f else 1f
         Row(
             modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .widthIn(max = 560.dp)
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,

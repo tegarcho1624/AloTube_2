@@ -133,3 +133,6 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 ### Autoplay de música y orden del mini-reproductor
 - Mini-reproductor: `Anterior  Play/Pausa  Siguiente`.
 - `PlayerProvider`: `onPlaybackStateChanged` con `STATE_ENDED` en música local avanza a la siguiente de la cola (`LocalAudioController.next`); si era la última, se detiene. La cola es `PlaybackQueue` (el ExoPlayer carga una canción a la vez), así que no se precarga toda la lista de `MediaItem`.
+
+### Alineación de la fila de controles
+- La columna principal de `AudioPlayerScreen` usa `horizontalAlignment = CenterHorizontally` y la fila de 8 botones ocupa todo el ancho (`fillMaxWidth`, `SpaceEvenly`), sin tope de 560 dp.
