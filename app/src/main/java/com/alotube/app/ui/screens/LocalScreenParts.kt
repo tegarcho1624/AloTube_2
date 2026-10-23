@@ -23,7 +23,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -136,26 +135,20 @@ fun rememberMediaPermission(): MediaPermission {
     )
 }
 
-/** Título de la pantalla + (si hay permiso) alternar "solo descargas / todo el dispositivo". */
+/** Título de la pantalla (ya no hay selector "solo descargas / todo el dispositivo": se lee todo). */
 @Composable
-fun LocalHeader(title: String, showToggle: Boolean, includeAll: Boolean, onToggle: () -> Unit) {
+fun LocalHeader(title: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 20.dp, end = 12.dp, top = 16.dp, bottom = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.accents.hi
         )
-        if (showToggle) {
-            TextButton(onClick = onToggle) {
-                Text(stringResource(if (includeAll) R.string.lp_show_downloads else R.string.lp_show_all))
-            }
-        }
     }
 }
 

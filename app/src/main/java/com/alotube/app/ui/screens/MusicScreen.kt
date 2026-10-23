@@ -59,10 +59,7 @@ fun MusicScreen(
     Column(modifier = Modifier.fillMaxSize()) {
         if (folder == null) {
             LocalHeader(
-                title = stringResource(R.string.mp_title),
-                showToggle = permission.granted,
-                includeAll = state.includeAll,
-                onToggle = { viewModel.setIncludeAll(!state.includeAll) }
+                title = stringResource(R.string.mp_title)
             )
         } else {
             Breadcrumb(

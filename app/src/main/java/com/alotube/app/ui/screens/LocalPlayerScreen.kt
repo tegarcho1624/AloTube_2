@@ -70,10 +70,7 @@ fun LocalPlayerScreen(
     Column(modifier = Modifier.fillMaxSize()) {
         if (folder == null) {
             LocalHeader(
-                title = stringResource(R.string.lp_title),
-                showToggle = permission.granted,
-                includeAll = state.includeAll,
-                onToggle = { viewModel.setIncludeAll(!state.includeAll) }
+                title = stringResource(R.string.lp_title)
             )
         } else {
             Breadcrumb(name = folder.name, onBack = viewModel::closeFolder)

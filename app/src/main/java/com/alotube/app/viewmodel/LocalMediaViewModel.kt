@@ -14,14 +14,14 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class LocalMediaUiState(
-    val loading: Boolean = false,
+    val loading: Boolean = true,
     /** true cuando ya hubo una lectura correcta (así el refresco no muestra spinner). */
     val loaded: Boolean = false,
     val error: String? = null,
     val videos: List<LocalMedia> = emptyList(),
     val audios: List<LocalMedia> = emptyList(),
-    /** false = solo Download/; true = todo el dispositivo. */
-    val includeAll: Boolean = false,
+    /** true = todo el dispositivo (por defecto); false = solo Download/. Ya no hay selector en la interfaz. */
+    val includeAll: Boolean = true,
     /** Carpeta de videos abierta (BUCKET_ID). null = se muestran las carpetas. */
     val currentFolderId: Long? = null,
     /** Carpeta de audios abierta en "Música" (BUCKET_ID). null = se muestran las carpetas. */
