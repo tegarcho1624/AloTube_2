@@ -180,3 +180,6 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 - **Se ve en los 3 sitios**: recuadro de Etiquetas (la actual o la elegida; sin carátula conserva el texto), reproductor grande y miniaturas de la lista/carpeta. Tras guardar, `AudioMetadataRepository.invalidate(uri)` refresca todo (también la tarjeta de carpeta).
 - **ExoPlayer**: tras guardar se recarga el `MediaItem` actual (misma posición/estado) con título, artista, álbum y la carátula nueva (`setArtworkData`) para controles y notificación.
 - `versionCode` 23. **No cambia:** diseño, lógica de etiquetas de texto, reproducción ni YouTube.
+
+### Carátulas: llenar todo el recuadro
+- `AudioCover` recibe `contentScale` (por defecto `Crop`, como antes). El disco grande de `AudioPlayerContent` y la miniatura de `AudioTrackRow` usan `ContentScale.FillBounds` (llena el 100 % del recuadro con las esquinas redondeadas de siempre). El mini-reproductor y la tarjeta de carpeta no cambian. Solo visual: no se toca el .opus ni las etiquetas. `versionCode` 24.

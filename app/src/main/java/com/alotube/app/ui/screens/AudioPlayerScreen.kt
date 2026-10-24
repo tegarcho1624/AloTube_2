@@ -52,6 +52,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -159,6 +160,7 @@ fun AudioPlayerContent(
                 AudioCover(
                     bitmap = cover,
                     iconSize = 88.dp,
+                    contentScale = ContentScale.FillBounds,
                     modifier = Modifier
                         .size(side)
                         .clip(RoundedCornerShape(24.dp))

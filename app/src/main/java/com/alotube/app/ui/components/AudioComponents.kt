@@ -61,7 +61,12 @@ import com.alotube.app.util.formatDuration
  * color de acento sobre un fondo suave del acento.
  */
 @Composable
-fun AudioCover(bitmap: Bitmap?, modifier: Modifier = Modifier, iconSize: Dp = 28.dp) {
+fun AudioCover(
+    bitmap: Bitmap?,
+    modifier: Modifier = Modifier,
+    iconSize: Dp = 28.dp,
+    contentScale: ContentScale = ContentScale.Crop
+) {
     val accents = MaterialTheme.accents
     Box(
         modifier = modifier.background(AloColors.Sf3),
@@ -71,7 +76,7 @@ fun AudioCover(bitmap: Bitmap?, modifier: Modifier = Modifier, iconSize: Dp = 28
             Image(
                 bitmap = bitmap.asImageBitmap(),
                 contentDescription = null,
-                contentScale = ContentScale.Crop,
+                contentScale = contentScale,
                 modifier = Modifier.fillMaxSize()
             )
         } else {
@@ -158,6 +163,7 @@ fun AudioTrackRow(
         Box(modifier = Modifier.size(56.dp)) {
             AudioCover(
                 bitmap = info?.cover,
+                contentScale = ContentScale.FillBounds,
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(RoundedCornerShape(12.dp))
