@@ -218,7 +218,7 @@ fun AudioFolderCard(
     icon: ImageBitmap? = null
 ) {
     val ctx = LocalContext.current
-    val cover by produceState<Bitmap?>(initialValue = null, folder.id, tracks) {
+    val cover by produceState<Bitmap?>(initialValue = null, folder.id, tracks, AudioMetadataRepository.version.collectAsState().value) {
         value = AudioMetadataRepository.firstCover(ctx, tracks)
     }
     Column(

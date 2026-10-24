@@ -173,3 +173,10 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 - **Permisos**: Android 11+ `MediaStore.createWriteRequest` (diálogo del sistema una sola vez por archivo ajeno a la app); Android 10 `RecoverableSecurityException`. No hace falta `WRITE_EXTERNAL_STORAGE` (minSdk 29).
 - **Reproductor**: `beforeSave` detiene el audio (para soltar el archivo) y `afterSave` lo recarga con las etiquetas nuevas en la misma posición y con el mismo estado play/pausa. `AudioMetadataRepository.invalidate(uri)` + `version` hacen que pantalla de reproducción, mini-reproductor y listas se actualicen sin reiniciar la app.
 - `versionCode` 22. **No cambia:** la lógica de reproducción ni YouTube.
+
+## Carátula del álbum (guardar en el archivo)
+- **Dos entradas, mismo selector** (Photo Picker de Android, solo imágenes): ⋮ > "Carátula del álbum" (`AudioPlayerContent`) abre el selector y, al elegir, abre Etiquetas con esa imagen ya puesta; el lápiz de Etiquetas abre el mismo selector. La imagen solo se guarda al tocar ✓ (misma tubería que el texto: `TagSaver`, respaldo, verificación, restauración). La lupa sigue con "Próximamente".
+- `data/local/CoverEncoder.kt` (en `Dispatchers.IO`): lee con `ImageDecoder` (respeta la orientación), reduce a 500×500 máx. sin deformar, JPEG calidad 88 (PNG transparente sobre fondo negro) y lo empaqueta como `METADATA_BLOCK_PICTURE` (bloque picture de FLAC, tipo 3 portada, en base64). `TagEdits.coverBlock` lo añade a las etiquetas que escribe `OpusTagWriter` (reemplaza las portadas anteriores; el audio no se toca).
+- **Se ve en los 3 sitios**: recuadro de Etiquetas (la actual o la elegida; sin carátula conserva el texto), reproductor grande y miniaturas de la lista/carpeta. Tras guardar, `AudioMetadataRepository.invalidate(uri)` refresca todo (también la tarjeta de carpeta).
+- **ExoPlayer**: tras guardar se recarga el `MediaItem` actual (misma posición/estado) con título, artista, álbum y la carátula nueva (`setArtworkData`) para controles y notificación.
+- `versionCode` 23. **No cambia:** diseño, lógica de etiquetas de texto, reproducción ni YouTube.

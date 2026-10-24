@@ -4,6 +4,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -42,6 +43,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import android.graphics.Bitmap
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import com.alotube.app.data.local.CoverEncoder
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
@@ -86,7 +94,7 @@ import java.util.Locale
 /*
  * Opciones de canción (botón ⋮ de la pantalla de reproducción de música local):
  *  - SongOptionsSheet : hoja con Etiquetas / Carátula del álbum / Detalles.
- *  - SongTagsScreen   : pantalla "Etiquetas": campos editables y ✓ que guarda en el archivo (TagSaver).
+ *  - SongTagsScreen   : pantalla "Etiquetas": campos editables, carátula (lápiz = selector) y ✓ que guarda en el archivo (TagSaver).
  *  - SongDetailsDialog: "Detalles" con los datos reales del archivo (AudioDetailsReader).
  * Detalles solo lee; Etiquetas escribe el archivo solo al tocar ✓ (la reproducción la para/reanuda quien llama).
  */
@@ -292,7 +300,8 @@ fun SongTagsScreen(
     fallbackName: String,
     onBack: () -> Unit,
     beforeSave: suspend () -> Unit = {},
-    afterSave: suspend (changed: Boolean) -> Unit = {}
+    afterSave: suspend (changed: Boolean) -> Unit = {},
+    initialCover: Uri? = null
 ) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -312,6 +321,20 @@ fun SongTagsScreen(
     var track by remember(d) { mutableStateOf(d?.track.orEmpty()) }
     var year by remember(d) { mutableStateOf(d?.year.orEmpty()) }
     var genre by remember(d) { mutableStateOf(d?.genre.orEmpty()) }
+
+    // Carátula: la actual del archivo, o la nueva elegida (se incrusta al tocar ✓)
+    var coverUri by rememberSaveable(initialCover) { mutableStateOf(initialCover) }
+    val tagsVersion by AudioMetadataRepository.version.collectAsState()
+    val currentCover by produceState<Bitmap?>(initialValue = null, uri, tagsVersion) {
+        value = uri?.let { AudioMetadataRepository.loadLargeCover(ctx, it, fallbackName) }
+    }
+    val pickedCover by produceState<Bitmap?>(initialValue = null, coverUri) {
+        value = coverUri?.let { CoverEncoder.decode(ctx, it, 300) }
+    }
+    val shownCover = pickedCover ?: currentCover
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { picked ->
+        if (picked != null) coverUri = picked
+    }
 
     var saving by remember { mutableStateOf(false) }
     var pendingEdits by remember { mutableStateOf<TagEdits?>(null) }
@@ -408,9 +431,23 @@ fun SongTagsScreen(
 
     val onSave = save@{
         if (saving || d == null) return@save
-        val edits = buildEdits()
-        pendingEdits = edits
-        scope.launch { runSave(edits) }
+        saving = true
+        scope.launch {
+            // La imagen elegida se reduce a 500 px máx. y se pasa a JPEG antes de incrustarla
+            var block: String? = null
+            val picked = coverUri
+            if (picked != null) {
+                block = CoverEncoder.pictureBlock(ctx, picked)
+                if (block == null) {
+                    saving = false
+                    toast(R.string.so_err_cover)
+                    return@launch
+                }
+            }
+            val edits = buildEdits().copy(coverBlock = block)
+            pendingEdits = edits
+            runSave(edits)
+        }
         Unit
     }
     val back = { if (!saving) onBack() }
@@ -491,19 +528,29 @@ fun SongTagsScreen(
                                     .background(AloColors.Sf3),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(104.dp)
-                                        .clip(CircleShape)
-                                        .background(AloColors.Ln2.copy(alpha = 0.6f))
-                                )
-                                Text(
-                                    text = stringResource(R.string.so_no_cover),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = AloColors.Ink,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.padding(horizontal = 12.dp)
-                                )
+                                val cover = shownCover
+                                if (cover != null) {
+                                    Image(
+                                        bitmap = cover.asImageBitmap(),
+                                        contentDescription = null,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                } else {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(104.dp)
+                                            .clip(CircleShape)
+                                            .background(AloColors.Ln2.copy(alpha = 0.6f))
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.so_no_cover),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = AloColors.Ink,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.padding(horizontal = 12.dp)
+                                    )
+                                }
                             }
                             Spacer(Modifier.width(16.dp))
                             Row(
@@ -513,8 +560,12 @@ fun SongTagsScreen(
                                     .padding(horizontal = 6.dp, vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                // Lápiz: la edición de la carátula llega en la siguiente fase
-                                IconButton(onClick = soon) {
+                                // Lápiz: abre el selector de imágenes (igual que ⋮ > Carátula del álbum)
+                                IconButton(onClick = {
+                                    if (editable) {
+                                        picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                                    }
+                                }) {
                                     Icon(
                                         painter = painterResource(R.drawable.ic_song_edit),
                                         contentDescription = stringResource(R.string.so_edit_cd),

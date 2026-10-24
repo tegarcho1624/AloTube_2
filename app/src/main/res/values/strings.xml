@@ -208,6 +208,7 @@
     <string name="so_err_write">No se pudo escribir en el archivo; se restauró el original</string>
     <string name="so_err_verify">El archivo no quedó bien tras guardar; se restauró el original</string>
     <string name="so_err_structure">El archivo está dañado o tiene una estructura que no se puede editar</string>
+    <string name="so_err_cover">No se pudo leer la imagen elegida</string>
     <string name="so_err_unknown">Error al guardar las etiquetas</string>
     <string name="so_f_name">Nombre</string>
     <string name="so_f_album">Álbum</string>

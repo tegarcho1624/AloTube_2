@@ -40,7 +40,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import com.alotube.app.data.local.CoverEncoder
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -104,6 +111,14 @@ fun AudioPlayerContent(
     var showOptions by remember { mutableStateOf(false) }
     var showTags by remember { mutableStateOf(false) }
     var showDetails by remember { mutableStateOf(false) }
+    // Carátula elegida desde ⋮ > "Carátula del álbum" (se guarda al tocar ✓ en Etiquetas)
+    var pendingCover by rememberSaveable { mutableStateOf<android.net.Uri?>(null) }
+    val coverPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { picked ->
+        if (picked != null) {
+            pendingCover = picked
+            showTags = true
+        }
+    }
 
     // Lectura periódica del estado (igual que el mini-reproductor); no toca la reproducción
     LaunchedEffect(player) {
@@ -376,8 +391,9 @@ fun AudioPlayerContent(
                 showTags = true
             },
             onCover = {
+                // Mismo selector que el lápiz de Etiquetas: la imagen elegida se abre en Etiquetas, donde ✓ la guarda
                 showOptions = false
-                Toast.makeText(ctx, R.string.soon_toast, Toast.LENGTH_SHORT).show()
+                coverPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
             },
             onDetails = {
                 showOptions = false
@@ -392,7 +408,11 @@ fun AudioPlayerContent(
         SongTagsScreen(
             uri = songUri,
             fallbackName = title,
-            onBack = { showTags = false },
+            initialCover = pendingCover,
+            onBack = {
+                showTags = false
+                pendingCover = null
+            },
             beforeSave = {
                 resume[0] = player.currentPosition.coerceAtLeast(0L)
                 resume[1] = if (player.playWhenReady && player.playbackState != Player.STATE_ENDED) 1L else 0L
@@ -403,6 +423,10 @@ fun AudioPlayerContent(
                 val uri = songUri
                 if (uri != null) {
                     val info = AudioMetadataRepository.load(ctx, uri, title)
+                    // Carátula (ya con la nueva) para los controles y la notificación
+                    val art = withContext(Dispatchers.Default) {
+                        AudioMetadataRepository.loadLargeCover(ctx, uri, title)?.let { CoverEncoder.jpeg(it) }
+                    }
                     player.setMediaItem(
                         MediaItem.Builder()
                             .setUri(uri)
@@ -411,6 +435,9 @@ fun AudioPlayerContent(
                                     .setTitle(info.title)
                                     .setArtist(info.artist)
                                     .setAlbumTitle(info.album)
+                                    .apply {
+                                        if (art != null) setArtworkData(art, MediaMetadata.PICTURE_TYPE_FRONT_COVER)
+                                    }
                                     .build()
                             )
                             .build(),

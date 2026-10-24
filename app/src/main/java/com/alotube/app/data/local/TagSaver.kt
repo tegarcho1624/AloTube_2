@@ -23,7 +23,9 @@ data class TagEdits(
     val albumArtist: String? = null,
     val track: String? = null,
     val year: String? = null,
-    val genre: String? = null
+    val genre: String? = null,
+    /** Carátula ya codificada (METADATA_BLOCK_PICTURE en base64, ver [CoverEncoder]); null = no tocar. */
+    val coverBlock: String? = null
 ) {
     /** Clave de comentario Vorbis/Opus (en mayúsculas) -> valor. Solo los campos que cambiaron. */
     fun toVorbis(): Map<String, String> {
@@ -36,6 +38,7 @@ data class TagEdits(
         track?.let { map["TRACKNUMBER"] = it }
         year?.let { map["DATE"] = it }
         genre?.let { map["GENRE"] = it }
+        coverBlock?.let { map["METADATA_BLOCK_PICTURE"] = it }
         return map
     }
 }
