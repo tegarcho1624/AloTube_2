@@ -59,6 +59,9 @@ import com.alotube.app.R
 import com.alotube.app.player.PlaybackQueue
 import com.alotube.app.ui.components.ActionSpec
 import com.alotube.app.ui.components.AudioCover
+import com.alotube.app.ui.components.SongDetailsDialog
+import com.alotube.app.ui.components.SongOptionsSheet
+import com.alotube.app.ui.components.SongTagsScreen
 import com.alotube.app.ui.components.VideoActionBar
 import com.alotube.app.ui.theme.AloColors
 import com.alotube.app.ui.theme.accents
@@ -94,6 +97,10 @@ fun AudioPlayerContent(
     var durationMs by remember { mutableLongStateOf(0L) }
     var dragging by remember { mutableStateOf(false) }
     var dragFraction by remember { mutableStateOf(0f) }
+    // Opciones de canción (⋮): hoja, Etiquetas (solo visual) y Detalles (datos reales)
+    var showOptions by remember { mutableStateOf(false) }
+    var showTags by remember { mutableStateOf(false) }
+    var showDetails by remember { mutableStateOf(false) }
 
     // Lectura periódica del estado (igual que el mini-reproductor); no toca la reproducción
     LaunchedEffect(player) {
@@ -252,7 +259,7 @@ fun AudioPlayerContent(
                 size = 40.dp * k,
                 iconSize = 22.dp * k
             ) {
-                Toast.makeText(ctx, R.string.mp_more_soon, Toast.LENGTH_SHORT).show()
+                showOptions = true
             }
             // Barajear: activado = acento dinámico; desactivado = gris
             ControlButton(
@@ -353,6 +360,33 @@ fun AudioPlayerContent(
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         )
         Spacer(Modifier.height(24.dp))
+    }
+
+    // ---- Opciones de canción (⋮) ----
+    // La canción actual es la de la cola (content:// del audio local); solo se LEE, no se modifica nada
+    val songUri = queue.current?.url?.let { android.net.Uri.parse(it) }
+    if (showOptions) {
+        SongOptionsSheet(
+            onDismiss = { showOptions = false },
+            onTags = {
+                showOptions = false
+                showTags = true
+            },
+            onCover = {
+                showOptions = false
+                Toast.makeText(ctx, R.string.soon_toast, Toast.LENGTH_SHORT).show()
+            },
+            onDetails = {
+                showOptions = false
+                showDetails = true
+            }
+        )
+    }
+    if (showTags) {
+        SongTagsScreen(uri = songUri, fallbackName = title, onBack = { showTags = false })
+    }
+    if (showDetails) {
+        SongDetailsDialog(uri = songUri, fallbackName = title, onDismiss = { showDetails = false })
     }
 }
 

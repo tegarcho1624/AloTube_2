@@ -157,3 +157,11 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 
 ### Íconos de carpeta: llenar todo el recuadro
 - `AudioFolderCard` y `LocalFolderCard`: la imagen personalizada usa `ContentScale.FillBounds` con `fillMaxSize()` dentro del recuadro (se estira hasta los bordes, como en Alouncher). Antes era `Crop`. Solo cambia el dibujo; el arrastre y el menú de toque largo no se tocan. `versionCode` 20.
+
+## Opciones de canción (⋮ en la pantalla de música local)
+- El botón **⋮** de `AudioPlayerScreen` abre una hoja inferior (`ModalBottomSheet`, `ui/components/SongOptions.kt`) con **Etiquetas**, **Carátula del álbum** y **Detalles** (íconos de trazo `ic_song_tag`, `ic_song_image`, `ic_song_info`; acento dinámico). Antes mostraba el aviso "Próximamente" (`mp_more_soon` ya no se usa).
+- **Etiquetas** (`SongTagsScreen`, solo visual): pantalla completa con barra (atrás, título, ✓, ⋮), recuadro "Sin carátula del álbum" con botones editar y buscar, campos de solo lectura (Nombre, Artista, Álbum, Compositor, Artista del álbum, Pista #, Año, Género) y el checkbox "Editar archivo de audio también". Los campos muestran los datos reales del archivo pero NO se pueden editar; ✓, ⋮, editar y buscar solo avisan "Próximamente" y no guardan nada.
+- **Carátula del álbum**: solo Toast "Próximamente".
+- **Detalles** (`SongDetailsDialog`, datos reales): `data/local/AudioDetails.kt` (`AudioDetailsReader`, fuera del hilo principal) lee con `MediaMetadataRetriever` (título, álbum, artista, compositor, artista del álbum, género, año, pista, duración, bitrate), el lector de `.opus` como respaldo de etiquetas, `MediaExtractor` para frecuencia de muestreo y canales, y `File` para ruta y tamaño (`File.length()`, en MB; si no hay ruta, el tamaño de MediaStore). Lo que falte se muestra como "Desconocido"; ningún fallo tumba la app. Solo LEE el archivo.
+- La canción se toma de `PlaybackQueue.state.current` (content://). Textos nuevos con prefijo `so_`. `versionCode` 21.
+- **No cambia:** la lógica de reproducción (botones, cola, `PlayerProvider`, `PlayerActivity`) ni nada de YouTube.
