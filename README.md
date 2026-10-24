@@ -154,3 +154,6 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 - **Íconos guardados** (`data/local/FolderIconStore.kt`): la imagen se copia (máx. 768 px, JPEG 92 o PNG si tiene transparencia, respeta la rotación EXIF) a `filesDir/folder_icons/`; ruta en SharedPreferences `folder_icons`, clave `<music|video>_<bucketId>`. Archivo faltante o dañado = ícono por defecto.
 - Textos nuevos: `fi_set`, `fi_remove` (los avisos reutilizan `bg_applied`, `bg_removed`, `bg_error`). `versionCode` 19.
 - **No cambia:** reproducción de audio/video y YouTube (`PlayerProvider`, `PlaybackQueue`, `PlayerActivity`…), lectura de MediaStore, permisos. Solo se guarda orden e imágenes dentro de la app; nunca se mueven ni borran archivos del dispositivo. Al tocar una canción/video, la cola de reproducción sigue el orden mostrado.
+
+### Íconos de carpeta: llenar todo el recuadro
+- `AudioFolderCard` y `LocalFolderCard`: la imagen personalizada usa `ContentScale.FillBounds` con `fillMaxSize()` dentro del recuadro (se estira hasta los bordes, como en Alouncher). Antes era `Crop`. Solo cambia el dibujo; el arrastre y el menú de toque largo no se tocan. `versionCode` 20.

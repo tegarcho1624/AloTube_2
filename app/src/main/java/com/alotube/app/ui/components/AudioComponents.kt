@@ -225,16 +225,21 @@ fun AudioFolderCard(
             .clickable(onClick = onClick)
     ) {
         if (icon != null) {
-            Image(
-                bitmap = icon,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                filterQuality = FilterQuality.High,
+            // Recuadro cuadrado de la carpeta; la imagen se estira para llenarlo por completo
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
                     .clip(RoundedCornerShape(16.dp))
-            )
+            ) {
+                Image(
+                    bitmap = icon,
+                    contentDescription = null,
+                    contentScale = ContentScale.FillBounds,
+                    filterQuality = FilterQuality.High,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         } else {
             AudioCover(
                 bitmap = cover,

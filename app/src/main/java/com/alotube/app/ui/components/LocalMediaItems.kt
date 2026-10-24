@@ -217,11 +217,11 @@ fun LocalFolderCard(
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 if (icon != null) {
-                    // Ícono personalizado: solo la imagen, ocupando toda la tarjeta
+                    // Ícono personalizado: solo la imagen, estirada para llenar el 100 % de la tarjeta
                     Image(
                         bitmap = icon,
                         contentDescription = null,
-                        contentScale = ContentScale.Crop,
+                        contentScale = ContentScale.FillBounds,
                         filterQuality = FilterQuality.High,
                         modifier = Modifier.fillMaxSize()
                     )
