@@ -7,6 +7,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -23,13 +29,23 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alotube.app.R
+import com.alotube.app.data.local.FolderKind
+import com.alotube.app.data.local.LocalFolder
 import com.alotube.app.data.local.LocalMedia
 import com.alotube.app.data.local.toVideoItem
 import com.alotube.app.data.model.VideoItem
 import com.alotube.app.player.rememberNowPlaying
 import com.alotube.app.ui.components.AudioFolderCard
 import com.alotube.app.ui.components.AudioTrackRow
+import com.alotube.app.ui.components.FolderIconMenu
 import com.alotube.app.ui.components.StatusMessage
+import com.alotube.app.ui.components.dragVisual
+import com.alotube.app.ui.components.move
+import com.alotube.app.ui.components.rememberFolderIcon
+import com.alotube.app.ui.components.rememberGridReorderState
+import com.alotube.app.ui.components.rememberListReorderState
+import com.alotube.app.ui.components.rememberReorderList
+import com.alotube.app.ui.components.reorderGestures
 import com.alotube.app.ui.theme.accents
 import com.alotube.app.viewmodel.LocalMediaUiState
 import com.alotube.app.viewmodel.LocalMediaViewModel
@@ -77,7 +93,9 @@ fun MusicScreen(
                 onRetry = viewModel::load,
                 onOpenFolder = viewModel::openAudioFolder,
                 onPlay = { list, index -> onVideoClick(list.map { it.toVideoItem() }, index) },
-                onMissing = viewModel::load
+                onMissing = viewModel::load,
+                onFolderOrder = { ids -> viewModel.setFolderOrder(FolderKind.MUSIC, ids) },
+                onTrackOrder = { bucketId, ids -> viewModel.setFileOrder(FolderKind.MUSIC, bucketId, ids) }
             )
         }
     }
@@ -89,7 +107,9 @@ private fun MusicContent(
     onRetry: () -> Unit,
     onOpenFolder: (Long) -> Unit,
     onPlay: (List<LocalMedia>, Int) -> Unit,
-    onMissing: () -> Unit
+    onMissing: () -> Unit,
+    onFolderOrder: (List<Long>) -> Unit,
+    onTrackOrder: (Long, List<Long>) -> Unit
 ) {
     val accents = MaterialTheme.accents
     val play = rememberSafePlay(onPlay, onMissing)
@@ -115,42 +135,110 @@ private fun MusicContent(
                 modifier = Modifier.align(Alignment.Center)
             )
 
-            // Nivel 2: canciones de la carpeta
-            folder != null -> {
-                val tracks = state.audioTracks(folder.id)
-                val currentUrl = now.item?.url
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    itemsIndexed(tracks, key = { _, media -> media.id }) { index, media ->
-                        AudioTrackRow(
-                            media = media,
-                            current = currentUrl != null && currentUrl == media.uri.toString(),
-                            playing = now.isPlaying,
-                            onClick = { play(tracks, index) }
-                        )
-                    }
-                }
-            }
+            // Nivel 2: canciones de la carpeta (toque largo + arrastre = cambiar el orden)
+            folder != null -> AudioTrackList(
+                source = state.audioTracks(folder.id),
+                currentUrl = now.item?.url,
+                playing = now.isPlaying,
+                onPlay = play,
+                onOrder = { ids -> onTrackOrder(folder.id, ids) }
+            )
 
-            // Nivel 1: carpetas
-            else -> LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 150.dp),
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
-            ) {
-                items(state.audioFolders, key = { it.id }) { f ->
-                    AudioFolderCard(
-                        folder = f,
-                        tracks = state.audioTracks(f.id),
-                        onClick = { onOpenFolder(f.id) }
-                    )
-                }
-            }
+            // Nivel 1: carpetas (toque largo + arrastre = reordenar; toque largo quieto = menú del ícono)
+            else -> AudioFolderGrid(
+                state = state,
+                onOpenFolder = onOpenFolder,
+                onOrder = onFolderOrder
+            )
         }
     }
+}
+
+/** Canciones de una carpeta: se pueden reordenar (solo dentro de la misma carpeta) con toque largo + arrastre. */
+@Composable
+private fun AudioTrackList(
+    source: List<LocalMedia>,
+    currentUrl: String?,
+    playing: Boolean,
+    onPlay: (List<LocalMedia>, Int) -> Unit,
+    onOrder: (List<Long>) -> Unit
+) {
+    val tracks = rememberReorderList(source)
+    val listState = rememberLazyListState()
+    val reorder = rememberListReorderState(
+        listState = listState,
+        onMove = { from, to -> tracks.move(from, to) },
+        onDrop = { _, moved -> if (moved) onOrder(tracks.map { it.id }) }
+    )
+    LazyColumn(
+        state = listState,
+        modifier = Modifier
+            .fillMaxSize()
+            .reorderGestures(reorder),
+        contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        itemsIndexed(tracks, key = { _, media -> media.id }) { index, media ->
+            AudioTrackRow(
+                media = media,
+                current = currentUrl != null && currentUrl == media.uri.toString(),
+                playing = playing,
+                onClick = { onPlay(tracks.toList(), index) },
+                modifier = (
+                    if (reorder.isDragged(media.id)) Modifier
+                    else Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null)
+                    ).dragVisual(reorder, media.id, RoundedCornerShape(14.dp))
+            )
+        }
+    }
+}
+
+/**
+ * Carpetas de música: toque largo + arrastre cambia su posición; toque largo sin mover abre el menú
+ * "Establecer icono / Quitar fondo". El orden y los íconos se guardan en la app (no tocan los archivos).
+ */
+@Composable
+private fun AudioFolderGrid(
+    state: LocalMediaUiState,
+    onOpenFolder: (Long) -> Unit,
+    onOrder: (List<Long>) -> Unit
+) {
+    val folders = rememberReorderList(state.audioFolders)
+    val gridState = rememberLazyGridState()
+    var menuFolder by remember { mutableStateOf<LocalFolder?>(null) }
+    val reorder = rememberGridReorderState(
+        gridState = gridState,
+        onMove = { from, to -> folders.move(from, to) },
+        onDrop = { key, moved ->
+            if (moved) {
+                onOrder(folders.map { it.id })
+            } else {
+                menuFolder = folders.firstOrNull { it.id == key }
+            }
+        }
+    )
+    LazyVerticalGrid(
+        state = gridState,
+        columns = GridCells.Adaptive(minSize = 150.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .reorderGestures(reorder),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
+    ) {
+        items(folders, key = { it.id }) { f ->
+            AudioFolderCard(
+                folder = f,
+                tracks = state.audioTracks(f.id),
+                onClick = { onOpenFolder(f.id) },
+                icon = rememberFolderIcon(FolderKind.MUSIC, f.id),
+                modifier = (
+                    if (reorder.isDragged(f.id)) Modifier
+                    else Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null)
+                    ).dragVisual(reorder, f.id, RoundedCornerShape(16.dp))
+            )
+        }
+    }
+    FolderIconMenu(kind = FolderKind.MUSIC, target = menuFolder, onDismiss = { menuFolder = null })
 }

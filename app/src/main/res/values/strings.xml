@@ -191,4 +191,6 @@
     <string name="mp_repeat_all_on">Repetir lista activado</string>
     <string name="mp_repeat_one_on">Repetir canción activado</string>
     <string name="mp_repeat_off">Repetición desactivada</string>
+    <string name="fi_set">Establecer icono</string>
+    <string name="fi_remove">Quitar fondo</string>
 </resources>

@@ -83,7 +83,7 @@ object LocalAudioController {
         }
     }
 
-    /** Pasa a la siguiente canción de la cola (y la carga con LocalAudioLoader, sin importar si hay pantalla abierta). */
+    /** Pasa a la siguiente canción de la cola y, si no hay pantalla completa, la carga aquí. */
     fun next(ctx: Context) {
         if (!PlaybackQueue.next()) return
         loadCurrent(ctx)
@@ -103,19 +103,36 @@ object LocalAudioController {
         loadCurrent(ctx)
     }
 
-    /**
-     * Carga la canción actual de la cola con el cargador único (LocalAudioLoader). Es idempotente: si ya
-     * la cargó el PlayerProvider o la pantalla completa, no la reinicia.
-     */
+    /** Carga aquí la canción actual de la cola si no hay pantalla completa abierta (ella la carga sola). */
     private fun loadCurrent(ctx: Context) {
+        if (PlayerProvider.owner != null) return // la pantalla completa abierta la carga
         val item = PlaybackQueue.state.value.current ?: return
         if (!isLocalAudioUrl(item.url)) return
         val app = ctx.applicationContext
         scope.launch {
+            val uri = Uri.parse(item.url)
+            val info = AudioMetadataRepository.load(app, uri, item.title)
+            // Mientras se leían las etiquetas pudo cambiar la cola
+            if (PlaybackQueue.state.value.current?.url != item.url) return@launch
+            val player = PlayerProvider.get(app)
+            player.setMediaItem(
+                MediaItem.Builder()
+                    .setUri(uri)
+                    .setMediaMetadata(
+                        MediaMetadata.Builder()
+                            .setTitle(info.title)
+                            .setArtist(info.artist)
+                            .setAlbumTitle(info.album)
+                            .build()
+                    )
+                    .build()
+            )
+            player.prepare()
+            player.playWhenReady = true
             try {
-                LocalAudioLoader.load(app, item.url, item.title)
+                app.startService(Intent(app, PlaybackService::class.java))
             } catch (_: Exception) {
-                // Archivo borrado o ilegible: se queda lo que sonaba, sin crash
+                // Sin servicio la reproducción sigue; solo no habría notificación
             }
         }
     }

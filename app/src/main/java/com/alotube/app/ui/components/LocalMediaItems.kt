@@ -30,6 +30,8 @@ import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -193,7 +195,13 @@ fun LocalAudioRow(media: LocalMedia, onClick: () -> Unit, modifier: Modifier = M
  * acento dinámico, nombre y cantidad de videos.
  */
 @Composable
-fun LocalFolderCard(folder: LocalFolder, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun LocalFolderCard(
+    folder: LocalFolder,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    /** Ícono personalizado de la carpeta (FolderIconStore); si es null se ve la miniatura + ícono de siempre. */
+    icon: ImageBitmap? = null
+) {
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -208,27 +216,38 @@ fun LocalFolderCard(folder: LocalFolder, onClick: () -> Unit, modifier: Modifier
                 .aspectRatio(4f / 3f)
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                LocalThumbnail(
-                    uri = folder.cover.uri,
-                    placeholder = R.drawable.ic_folder,
-                    width = 320,
-                    height = 240,
-                    modifier = Modifier.fillMaxSize()
-                )
-                // Velo para que la miniatura quede de fondo y el ícono se lea bien
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(AloColors.Scrim)
-                )
-                Icon(
-                    painter = painterResource(R.drawable.ic_folder),
-                    contentDescription = null,
-                    tint = MaterialTheme.accents.hi,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .size(48.dp)
-                )
+                if (icon != null) {
+                    // Ícono personalizado: solo la imagen, ocupando toda la tarjeta
+                    Image(
+                        bitmap = icon,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        filterQuality = FilterQuality.High,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    LocalThumbnail(
+                        uri = folder.cover.uri,
+                        placeholder = R.drawable.ic_folder,
+                        width = 320,
+                        height = 240,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    // Velo para que la miniatura quede de fondo y el ícono se lea bien
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(AloColors.Scrim)
+                    )
+                    Icon(
+                        painter = painterResource(R.drawable.ic_folder),
+                        contentDescription = null,
+                        tint = MaterialTheme.accents.hi,
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .size(48.dp)
+                    )
+                }
             }
         }
         Text(

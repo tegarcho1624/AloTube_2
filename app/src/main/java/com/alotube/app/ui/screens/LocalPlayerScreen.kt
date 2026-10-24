@@ -10,10 +10,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
@@ -24,6 +26,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -32,12 +37,21 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alotube.app.R
+import com.alotube.app.data.local.FolderKind
+import com.alotube.app.data.local.LocalFolder
 import com.alotube.app.data.local.LocalMedia
 import com.alotube.app.data.local.toVideoItem
 import com.alotube.app.data.model.VideoItem
 import com.alotube.app.ui.components.LocalFolderCard
 import com.alotube.app.ui.components.LocalVideoCard
+import com.alotube.app.ui.components.FolderIconMenu
 import com.alotube.app.ui.components.StatusMessage
+import com.alotube.app.ui.components.dragVisual
+import com.alotube.app.ui.components.move
+import com.alotube.app.ui.components.rememberFolderIcon
+import com.alotube.app.ui.components.rememberGridReorderState
+import com.alotube.app.ui.components.rememberReorderList
+import com.alotube.app.ui.components.reorderGestures
 import com.alotube.app.ui.components.gridColumns
 import com.alotube.app.ui.theme.AloColors
 import com.alotube.app.ui.theme.accents
@@ -84,7 +98,9 @@ fun LocalPlayerScreen(
                 onRetry = viewModel::load,
                 onOpenFolder = viewModel::openFolder,
                 onPlay = { list, index -> onVideoClick(list.map { it.toVideoItem() }, index) },
-                onMissing = viewModel::load
+                onMissing = viewModel::load,
+                onFolderOrder = { ids -> viewModel.setFolderOrder(FolderKind.VIDEO, ids) },
+                onFileOrder = { bucketId, ids -> viewModel.setFileOrder(FolderKind.VIDEO, bucketId, ids) }
             )
         }
     }
@@ -140,7 +156,9 @@ private fun VideoFoldersContent(
     onRetry: () -> Unit,
     onOpenFolder: (Long) -> Unit,
     onPlay: (List<LocalMedia>, Int) -> Unit,
-    onMissing: () -> Unit
+    onMissing: () -> Unit,
+    onFolderOrder: (List<Long>) -> Unit,
+    onFileOrder: (Long, List<Long>) -> Unit
 ) {
     val accents = MaterialTheme.accents
     val play = rememberSafePlay(onPlay, onMissing)
@@ -165,34 +183,105 @@ private fun VideoFoldersContent(
                 modifier = Modifier.align(Alignment.Center)
             )
 
-            // Nivel 2: videos de la carpeta
-            folder != null -> {
-                val videos = state.folderVideos
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(gridColumns()),
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(20.dp)
-                ) {
-                    itemsIndexed(videos) { index, media ->
-                        LocalVideoCard(media = media, onClick = { play(videos, index) })
-                    }
-                }
-            }
+            // Nivel 2: videos de la carpeta (toque largo + arrastre = cambiar el orden)
+            folder != null -> VideoFileGrid(
+                source = state.folderVideos,
+                onPlay = play,
+                onOrder = { ids -> onFileOrder(folder.id, ids) }
+            )
 
-            // Nivel 1: carpetas
-            else -> LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 160.dp),
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
-            ) {
-                items(state.folders, key = { it.id }) { f ->
-                    LocalFolderCard(folder = f, onClick = { onOpenFolder(f.id) })
-                }
-            }
+            // Nivel 1: carpetas (toque largo + arrastre = reordenar; toque largo quieto = menú del ícono)
+            else -> VideoFolderGrid(
+                source = state.folders,
+                onOpenFolder = onOpenFolder,
+                onOrder = onFolderOrder
+            )
         }
     }
+}
+
+/** Videos de una carpeta: se pueden reordenar (solo dentro de la misma carpeta) con toque largo + arrastre. */
+@Composable
+private fun VideoFileGrid(
+    source: List<LocalMedia>,
+    onPlay: (List<LocalMedia>, Int) -> Unit,
+    onOrder: (List<Long>) -> Unit
+) {
+    val videos = rememberReorderList(source)
+    val gridState = rememberLazyGridState()
+    val reorder = rememberGridReorderState(
+        gridState = gridState,
+        onMove = { from, to -> videos.move(from, to) },
+        onDrop = { _, moved -> if (moved) onOrder(videos.map { it.id }) }
+    )
+    LazyVerticalGrid(
+        state = gridState,
+        columns = GridCells.Fixed(gridColumns()),
+        modifier = Modifier
+            .fillMaxSize()
+            .reorderGestures(reorder),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
+    ) {
+        itemsIndexed(videos, key = { _, media -> media.id }) { index, media ->
+            LocalVideoCard(
+                media = media,
+                onClick = { onPlay(videos.toList(), index) },
+                modifier = (
+                    if (reorder.isDragged(media.id)) Modifier
+                    else Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null)
+                    ).dragVisual(reorder, media.id, RoundedCornerShape(16.dp))
+            )
+        }
+    }
+}
+
+/**
+ * Carpetas de video: toque largo + arrastre cambia su posición; toque largo sin mover abre el menú
+ * "Establecer icono / Quitar fondo". El orden y los íconos se guardan en la app (no tocan los archivos).
+ */
+@Composable
+private fun VideoFolderGrid(
+    source: List<LocalFolder>,
+    onOpenFolder: (Long) -> Unit,
+    onOrder: (List<Long>) -> Unit
+) {
+    val folders = rememberReorderList(source)
+    val gridState = rememberLazyGridState()
+    var menuFolder by remember { mutableStateOf<LocalFolder?>(null) }
+    val reorder = rememberGridReorderState(
+        gridState = gridState,
+        onMove = { from, to -> folders.move(from, to) },
+        onDrop = { key, moved ->
+            if (moved) {
+                onOrder(folders.map { it.id })
+            } else {
+                menuFolder = folders.firstOrNull { it.id == key }
+            }
+        }
+    )
+    LazyVerticalGrid(
+        state = gridState,
+        columns = GridCells.Adaptive(minSize = 160.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .reorderGestures(reorder),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
+    ) {
+        items(folders, key = { it.id }) { f ->
+            LocalFolderCard(
+                folder = f,
+                onClick = { onOpenFolder(f.id) },
+                icon = rememberFolderIcon(FolderKind.VIDEO, f.id),
+                modifier = (
+                    if (reorder.isDragged(f.id)) Modifier
+                    else Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null)
+                    ).dragVisual(reorder, f.id, RoundedCornerShape(16.dp))
+            )
+        }
+    }
+    FolderIconMenu(kind = FolderKind.VIDEO, target = menuFolder, onDismiss = { menuFolder = null })
 }

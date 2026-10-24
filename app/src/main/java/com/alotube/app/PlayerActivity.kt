@@ -34,7 +34,6 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import com.alotube.app.data.model.PlaybackOption
 import com.alotube.app.data.model.VideoItem
-import com.alotube.app.player.LocalAudioLoader
 import com.alotube.app.player.PlaybackQueue
 import com.alotube.app.player.PlayerMediaSources
 import com.alotube.app.player.PlayerProvider
@@ -143,7 +142,7 @@ class PlayerActivity : ComponentActivity() {
 
     // ---------- Reproducción ----------
 
-    private suspend fun applySource(option: PlaybackOption, title: String, author: String, thumb: String?) {
+    private fun applySource(option: PlaybackOption, title: String, author: String, thumb: String?) {
         // Al cambiar de calidad se conserva la posición actual
         val position =
             if (player.mediaItemCount > 0 && !option.isHls && !option.isDash) player.currentPosition else 0L
@@ -153,13 +152,6 @@ class PlayerActivity : ComponentActivity() {
             .setArtist(author.ifBlank { null })
             .setArtworkUri(thumb?.let { Uri.parse(it) })
             .build()
-
-        if (option.isLocal && isLocalAudioUrl(option.videoUrl)) {
-            // Música local: el cargador único (mismo que usa el servicio en segundo plano) pone título,
-            // artista, álbum y carátula; si ya suena este archivo (p. ej. desde el mini-reproductor) no lo reinicia
-            LocalAudioLoader.load(this, option.videoUrl, title)
-            return
-        }
 
         if (option.isLocal) {
             // Si ya suena este mismo archivo (p. ej. se abrió desde el mini-reproductor) no se reinicia
@@ -251,12 +243,10 @@ class PlayerActivity : ComponentActivity() {
         }
         builder.setAspectRatio(safe)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            builder.setAutoEnterEnabled(player.isPlaying && viewModel.state.value.error == null && !playingLocalAudio())
+            builder.setAutoEnterEnabled(player.isPlaying && viewModel.state.value.error == null)
         }
         return builder.build()
     }
-
-    private fun playingLocalAudio(): Boolean = isLocalAudioUrl(PlaybackQueue.state.value.current?.url)
 
     private fun updatePipParams() {
         if (!pipSupported || !::player.isInitialized) return
@@ -279,8 +269,7 @@ class PlayerActivity : ComponentActivity() {
     /** Botón Inicio: con video reproduciéndose se minimiza a PiP (el audio sigue de todos modos). */
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
-        // Con música local no hay video que flotar: el audio sigue en segundo plano con su notificación
-        if (::player.isInitialized && player.isPlaying && viewModel.state.value.error == null && !playingLocalAudio()) enterPip()
+        if (::player.isInitialized && player.isPlaying && viewModel.state.value.error == null) enterPip()
     }
 
     override fun onPictureInPictureModeChanged(

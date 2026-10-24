@@ -35,6 +35,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -209,7 +211,9 @@ fun AudioFolderCard(
     folder: LocalFolder,
     tracks: List<LocalMedia>,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Ícono personalizado de la carpeta (FolderIconStore); si es null se ve la carátula / nota musical de siempre. */
+    icon: ImageBitmap? = null
 ) {
     val ctx = LocalContext.current
     val cover by produceState<Bitmap?>(initialValue = null, folder.id, tracks) {
@@ -220,14 +224,27 @@ fun AudioFolderCard(
             .fillMaxWidth()
             .clickable(onClick = onClick)
     ) {
-        AudioCover(
-            bitmap = cover,
-            iconSize = 56.dp,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f)
-                .clip(RoundedCornerShape(16.dp))
-        )
+        if (icon != null) {
+            Image(
+                bitmap = icon,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                filterQuality = FilterQuality.High,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .clip(RoundedCornerShape(16.dp))
+            )
+        } else {
+            AudioCover(
+                bitmap = cover,
+                iconSize = 56.dp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .clip(RoundedCornerShape(16.dp))
+            )
+        }
         Text(
             text = folder.name,
             style = MaterialTheme.typography.titleMedium,
