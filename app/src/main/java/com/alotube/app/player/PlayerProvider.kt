@@ -10,6 +10,14 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import com.alotube.app.PlaybackService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 /**
  * Dueño del ÚNICO ExoPlayer de la app. La pantalla de reproducción lo usa para poner fuentes y
@@ -30,6 +38,14 @@ object PlayerProvider {
     var owner: Any? = null
 
     val instance: ExoPlayer? get() = exo
+
+    /**
+     * Carga la música local cuando cambia la canción de la cola, SIN depender de ninguna pantalla:
+     * así Siguiente/Anterior de la notificación o de la pantalla de bloqueo y el autoplay funcionan con la
+     * pantalla apagada o con el reproductor completo cerrado (antes solo lo hacía la Activity al repintarse).
+     */
+    private val queueScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var queueJob: Job? = null
 
     @Synchronized
     fun get(ctx: Context): ExoPlayer {
@@ -90,6 +106,24 @@ object PlayerProvider {
 
         exo = player
         control = QueueAwarePlayer(player)
+        if (queueJob == null) {
+            queueJob = queueScope.launch {
+                PlaybackQueue.state
+                    .map { it.current?.url }
+                    .distinctUntilChanged()
+                    .drop(1) // el valor inicial lo carga quien abrió la canción
+                    .collect { url ->
+                        val item = PlaybackQueue.state.value.current
+                        if (url != null && item != null && isLocalAudioUrl(url)) {
+                            try {
+                                LocalAudioLoader.load(app, url, item.title)
+                            } catch (_: Exception) {
+                                // Archivo borrado o ilegible: queda la canción anterior, sin crash
+                            }
+                        }
+                    }
+            }
+        }
         return player
     }
 
@@ -114,6 +148,8 @@ object PlayerProvider {
 
     @Synchronized
     fun release() {
+        queueJob?.cancel()
+        queueJob = null
         exo?.release()
         exo = null
         control = null

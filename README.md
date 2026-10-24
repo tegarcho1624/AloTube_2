@@ -143,3 +143,12 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
   - Repetir canción: al terminar, `PlayerProvider` reinicia la misma (Siguiente/Anterior manuales siguen avanzando).
 - Sin cambios: Play/Pausa, ±10 s, Siguiente y Anterior (los botones llaman a los mismos métodos del `Player`; solo `PlaybackQueue.next/previous` tienen en cuenta los modos).
 - Textos nuevos: `mp_repeat_one`, `mp_repeat_all_on`, `mp_repeat_one_on`, `mp_repeat_off`. `versionCode` 18.
+
+## Segundo plano estable y notificación multimedia (música local)
+- **Causa encontrada del corte en segundo plano:** al terminar una canción (o al tocar Siguiente/Anterior en la notificación o la pantalla de bloqueo) solo se movía el índice de `PlaybackQueue`; la canción nueva la cargaba la `PlayerActivity` desde Compose, y con la pantalla apagada o la Activity cerrada Compose no se repinta, así que la siguiente no llegaba a sonar. Además, con música local, al pulsar Inicio la app entraba sola en PiP y cerrar esa ventana quitaba la tarea (y paraba el servicio).
+- `player/LocalAudioLoader.kt` (nuevo): ÚNICO camino para cargar una música local en el ExoPlayer. Idempotente (si el archivo ya suena no lo reinicia). Lo usan `PlayerProvider`, `LocalAudioController` y `PlayerActivity`.
+- `PlayerProvider`: al crear el player, observa la cola y carga la canción nueva sin depender de ninguna pantalla (cancela la observación en `release()`).
+- Metadatos del `MediaItem`: título = nombre del archivo sin extensión, artista y álbum de las etiquetas, carátula incrustada/del sistema como `artworkData` (sin carátula: ícono de nota musical con el acento sobre `Sf2`).
+- `PlaybackService`: la sesión tiene un comando propio "Barajear" (`ACTION_SHUFFLE`) y un `customLayout` con el botón (ícono `ic_notif_shuffle_on` cuando está activo); solo se muestra con música local. Estado = `PlaybackQueue`, así que app y notificación se sincronizan solas.
+- `PlayerActivity`: PiP automático (`onUserLeaveHint` / auto-enter) desactivado para música local; el botón "Emergente" sigue funcionando.
+- Sin cambios: interfaz visual, Play/Pausa, ±10 s, `AudioFocus` y `WakeLock` (ya estaban en `PlayerProvider`), permisos del manifiesto (ya estaban todos). `versionCode` 19.
