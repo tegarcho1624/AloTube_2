@@ -38,6 +38,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -129,14 +130,15 @@ fun PlayerScreen(
     // Música local: título / artista / álbum de las etiquetas (MediaMetadataRetriever) y la carátula
     // en el centro. Solo cambia lo que se MUESTRA; la reproducción es la de siempre.
     val isLocalAudio = isLocalAudioUrl(state.url)
-    val audioInfo by produceState<AudioInfo?>(initialValue = null, state.url) {
+    val tagsVersion by AudioMetadataRepository.version.collectAsState()
+    val audioInfo by produceState<AudioInfo?>(initialValue = null, state.url, tagsVersion) {
         value = if (isLocalAudio) {
             AudioMetadataRepository.load(ctx, Uri.parse(state.url), state.title)
         } else {
             null
         }
     }
-    val bigCover by produceState<Bitmap?>(initialValue = null, state.url) {
+    val bigCover by produceState<Bitmap?>(initialValue = null, state.url, tagsVersion) {
         value = if (isLocalAudio) {
             AudioMetadataRepository.loadLargeCover(ctx, Uri.parse(state.url), state.title)
         } else {

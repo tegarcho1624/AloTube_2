@@ -54,7 +54,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
+import com.alotube.app.data.local.AudioMetadataRepository
 import com.alotube.app.R
 import com.alotube.app.player.PlaybackQueue
 import com.alotube.app.ui.components.ActionSpec
@@ -97,7 +100,7 @@ fun AudioPlayerContent(
     var durationMs by remember { mutableLongStateOf(0L) }
     var dragging by remember { mutableStateOf(false) }
     var dragFraction by remember { mutableStateOf(0f) }
-    // Opciones de canción (⋮): hoja, Etiquetas (solo visual) y Detalles (datos reales)
+    // Opciones de canción (⋮): hoja, Etiquetas (editables) y Detalles (datos reales)
     var showOptions by remember { mutableStateOf(false) }
     var showTags by remember { mutableStateOf(false) }
     var showDetails by remember { mutableStateOf(false) }
@@ -383,7 +386,41 @@ fun AudioPlayerContent(
         )
     }
     if (showTags) {
-        SongTagsScreen(uri = songUri, fallbackName = title, onBack = { showTags = false })
+        // Al guardar etiquetas el archivo se reescribe: antes se detiene el audio para soltarlo y después se
+        // vuelve a cargar (con las etiquetas nuevas en la notificación) en el mismo punto y estado.
+        val resume = remember { LongArray(2) } // [0] = posición en ms, [1] = 1 si sonaba
+        SongTagsScreen(
+            uri = songUri,
+            fallbackName = title,
+            onBack = { showTags = false },
+            beforeSave = {
+                resume[0] = player.currentPosition.coerceAtLeast(0L)
+                resume[1] = if (player.playWhenReady && player.playbackState != Player.STATE_ENDED) 1L else 0L
+                player.playWhenReady = false
+                player.stop()
+            },
+            afterSave = { _ ->
+                val uri = songUri
+                if (uri != null) {
+                    val info = AudioMetadataRepository.load(ctx, uri, title)
+                    player.setMediaItem(
+                        MediaItem.Builder()
+                            .setUri(uri)
+                            .setMediaMetadata(
+                                MediaMetadata.Builder()
+                                    .setTitle(info.title)
+                                    .setArtist(info.artist)
+                                    .setAlbumTitle(info.album)
+                                    .build()
+                            )
+                            .build(),
+                        resume[0]
+                    )
+                    player.prepare()
+                    player.playWhenReady = resume[1] == 1L
+                }
+            }
+        )
     }
     if (showDetails) {
         SongDetailsDialog(uri = songUri, fallbackName = title, onDismiss = { showDetails = false })

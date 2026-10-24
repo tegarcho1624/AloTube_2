@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -29,8 +31,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.BottomSheetDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -43,6 +43,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -52,7 +55,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.input.KeyboardType
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -63,6 +73,11 @@ import androidx.compose.ui.window.DialogProperties
 import com.alotube.app.R
 import com.alotube.app.data.local.AudioDetails
 import com.alotube.app.data.local.AudioDetailsReader
+import com.alotube.app.data.local.AudioMetadataRepository
+import com.alotube.app.data.local.SaveError
+import com.alotube.app.data.local.SaveResult
+import com.alotube.app.data.local.TagEdits
+import com.alotube.app.data.local.TagSaver
 import com.alotube.app.ui.theme.AloColors
 import com.alotube.app.ui.theme.accents
 import com.alotube.app.util.formatDuration
@@ -71,9 +86,9 @@ import java.util.Locale
 /*
  * Opciones de canción (botón ⋮ de la pantalla de reproducción de música local):
  *  - SongOptionsSheet : hoja con Etiquetas / Carátula del álbum / Detalles.
- *  - SongTagsScreen   : pantalla "Etiquetas", SOLO VISUAL (campos de solo lectura, el ✓ no guarda nada).
+ *  - SongTagsScreen   : pantalla "Etiquetas": campos editables y ✓ que guarda en el archivo (TagSaver).
  *  - SongDetailsDialog: "Detalles" con los datos reales del archivo (AudioDetailsReader).
- * Nada de esto toca la reproducción ni modifica el archivo de audio.
+ * Detalles solo lee; Etiquetas escribe el archivo solo al tocar ✓ (la reproducción la para/reanuda quien llama).
  */
 
 // ---------------------------------------------------------------------------------------------
@@ -260,31 +275,149 @@ private fun DetailRow(@StringRes label: Int, value: String) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Etiquetas (solo visual)
+// Etiquetas (editables)
 // ---------------------------------------------------------------------------------------------
 
 /**
- * Pantalla "Etiquetas" a pantalla completa. SOLO VISUAL en esta fase: los campos son de solo lectura (se
- * muestran los datos reales del archivo), el ✓, ⋮, editar y buscar solo avisan "Próximamente" y no
- * guardan nada ni tocan el archivo.
+ * Pantalla "Etiquetas" a pantalla completa. Los campos se editan y el ✓ guarda los cambios en el archivo
+ * ORIGINAL (TagSaver: respaldo, escritura en segundo plano y verificación). Al terminar muestra un Toast y
+ * se cierra. El lápiz de la carátula, la lupa y ⋮ solo avisan "Próximamente".
+ *
+ * [beforeSave] se ejecuta justo antes de escribir (quien reproduce detiene el audio para soltar el archivo) y
+ * [afterSave] justo después, haya salido bien o mal (recarga y reanuda). [changed] = el archivo pudo cambiar.
  */
 @Composable
-fun SongTagsScreen(uri: Uri?, fallbackName: String, onBack: () -> Unit) {
+fun SongTagsScreen(
+    uri: Uri?,
+    fallbackName: String,
+    onBack: () -> Unit,
+    beforeSave: suspend () -> Unit = {},
+    afterSave: suspend (changed: Boolean) -> Unit = {}
+) {
     val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
     val accents = MaterialTheme.accents
     val details by produceState<AudioDetails?>(initialValue = null, uri) {
         value = AudioDetailsReader.read(ctx, uri, fallbackName)
     }
-    var editFile by remember { mutableStateOf(true) }
+    val d = details
     val soon = { Toast.makeText(ctx, R.string.soon_toast, Toast.LENGTH_SHORT).show() }
 
-    val unknown = stringResource(R.string.so_unknown)
-    val d = details
-    // Mientras se lee el archivo los campos van vacíos; después, el dato o "Desconocido"
-    fun text(value: String?): String = if (d == null) "" else (value ?: unknown)
+    // Valores de los campos: se rellenan cuando se termina de leer el archivo
+    var name by remember(d) { mutableStateOf(d?.name.orEmpty()) }
+    var artist by remember(d) { mutableStateOf(d?.artist.orEmpty()) }
+    var album by remember(d) { mutableStateOf(d?.album.orEmpty()) }
+    var composer by remember(d) { mutableStateOf(d?.composer.orEmpty()) }
+    var albumArtist by remember(d) { mutableStateOf(d?.albumArtist.orEmpty()) }
+    var track by remember(d) { mutableStateOf(d?.track.orEmpty()) }
+    var year by remember(d) { mutableStateOf(d?.year.orEmpty()) }
+    var genre by remember(d) { mutableStateOf(d?.genre.orEmpty()) }
+
+    var saving by remember { mutableStateOf(false) }
+    var pendingEdits by remember { mutableStateOf<TagEdits?>(null) }
+    var retryTick by remember { mutableIntStateOf(0) }
+
+    fun toast(@StringRes res: Int) = Toast.makeText(ctx, res, Toast.LENGTH_LONG).show()
+
+    // Diálogo del sistema "¿Permitir modificar este archivo?" (solo si el archivo es de otra app)
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            retryTick++
+        } else {
+            saving = false
+            toast(R.string.so_err_permission_denied)
+        }
+    }
+
+    suspend fun runSave(edits: TagEdits) {
+        val target = uri ?: run { saving = false; return }
+        saving = true
+        try {
+            beforeSave()
+            val result = TagSaver.save(ctx, target, edits)
+            when (result) {
+                is SaveResult.NeedsPermission -> {
+                    withContext(NonCancellable) { afterSave(false) }
+                    permissionLauncher.launch(IntentSenderRequest.Builder(result.intentSender).build())
+                    return // saving sigue true hasta que el usuario conteste
+                }
+                is SaveResult.Saved -> {
+                    AudioMetadataRepository.invalidate(target)
+                    withContext(NonCancellable) { afterSave(true) }
+                    toast(R.string.so_saved)
+                    saving = false
+                    onBack()
+                    return
+                }
+                is SaveResult.NoChanges -> {
+                    withContext(NonCancellable) { afterSave(false) }
+                    toast(R.string.so_no_changes)
+                    saving = false
+                    onBack()
+                    return
+                }
+                is SaveResult.Failed -> {
+                    if (result.touched) AudioMetadataRepository.invalidate(target)
+                    withContext(NonCancellable) { afterSave(result.touched) }
+                    toast(
+                        when (result.error) {
+                            SaveError.NOT_OPUS -> R.string.so_err_not_opus
+                            SaveError.PERMISSION -> R.string.so_err_permission
+                            SaveError.READ -> R.string.so_err_read
+                            SaveError.WRITE -> R.string.so_err_write
+                            SaveError.VERIFY -> R.string.so_err_verify
+                            SaveError.STRUCTURE -> R.string.so_err_structure
+                            SaveError.UNKNOWN -> R.string.so_err_unknown
+                        }
+                    )
+                    saving = false
+                }
+            }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            withContext(NonCancellable) { afterSave(true) }
+            toast(R.string.so_err_unknown)
+            saving = false
+        }
+    }
+
+    LaunchedEffect(retryTick) {
+        if (retryTick > 0) pendingEdits?.let { runSave(it) }
+    }
+
+    /** Solo los campos que el usuario cambió (null = no tocar). */
+    fun buildEdits(): TagEdits {
+        fun changed(now: String, before: String?): String? {
+            val value = now.trim()
+            return if (value != before.orEmpty().trim()) value else null
+        }
+        return TagEdits(
+            title = changed(name, d?.name),
+            artist = changed(artist, d?.artist),
+            album = changed(album, d?.album),
+            composer = changed(composer, d?.composer),
+            albumArtist = changed(albumArtist, d?.albumArtist),
+            track = changed(track, d?.track),
+            year = changed(year, d?.year),
+            genre = changed(genre, d?.genre)
+        )
+    }
+
+    val onSave = save@{
+        if (saving || d == null) return@save
+        val edits = buildEdits()
+        pendingEdits = edits
+        scope.launch { runSave(edits) }
+        Unit
+    }
+    val back = { if (!saving) onBack() }
+    val editable = d != null && !saving
 
     Dialog(
-        onDismissRequest = onBack,
+        onDismissRequest = back,
         properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnClickOutside = false)
     ) {
         Surface(modifier = Modifier.fillMaxSize(), color = AloColors.Bg) {
@@ -300,7 +433,7 @@ fun SongTagsScreen(uri: Uri?, fallbackName: String, onBack: () -> Unit) {
                             .padding(horizontal = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(onClick = onBack) {
+                        IconButton(onClick = back) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(R.string.back),
@@ -315,8 +448,16 @@ fun SongTagsScreen(uri: Uri?, fallbackName: String, onBack: () -> Unit) {
                                 .weight(1f)
                                 .padding(start = 8.dp)
                         )
-                        IconButton(onClick = soon) {
-                            Icon(Icons.Default.Check, contentDescription = null, tint = accents.hi)
+                        IconButton(onClick = onSave) {
+                            if (saving) {
+                                CircularProgressIndicator(
+                                    color = accents.hi,
+                                    strokeWidth = 2.dp,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            } else {
+                                Icon(Icons.Default.Check, contentDescription = null, tint = accents.hi)
+                            }
                         }
                         IconButton(onClick = soon) {
                             Icon(
@@ -331,6 +472,7 @@ fun SongTagsScreen(uri: Uri?, fallbackName: String, onBack: () -> Unit) {
                     Column(
                         modifier = Modifier
                             .weight(1f)
+                            .imePadding()
                             .verticalScroll(rememberScrollState())
                             .padding(horizontal = 12.dp)
                     ) {
@@ -371,6 +513,7 @@ fun SongTagsScreen(uri: Uri?, fallbackName: String, onBack: () -> Unit) {
                                     .padding(horizontal = 6.dp, vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
+                                // Lápiz: la edición de la carátula llega en la siguiente fase
                                 IconButton(onClick = soon) {
                                     Icon(
                                         painter = painterResource(R.drawable.ic_song_edit),
@@ -390,72 +533,49 @@ fun SongTagsScreen(uri: Uri?, fallbackName: String, onBack: () -> Unit) {
                             }
                         }
 
-                        // Campos (solo lectura)
-                        TagField(stringResource(R.string.so_f_name), text(d?.name))
-                        TagField(stringResource(R.string.so_f_artist), text(d?.artist))
-                        TagField(stringResource(R.string.so_f_album), text(d?.album))
-                        TagField(stringResource(R.string.so_f_composer), text(d?.composer))
-                        TagField(stringResource(R.string.so_f_album_artist), text(d?.albumArtist))
+                        // Campos (editables)
+                        TagField(stringResource(R.string.so_f_name), name, editable) { name = it }
+                        TagField(stringResource(R.string.so_f_artist), artist, editable) { artist = it }
+                        TagField(stringResource(R.string.so_f_album), album, editable) { album = it }
+                        TagField(stringResource(R.string.so_f_composer), composer, editable) { composer = it }
+                        TagField(stringResource(R.string.so_f_album_artist), albumArtist, editable) { albumArtist = it }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                             TagField(
-                                stringResource(R.string.so_f_track),
-                                if (d == null) "" else (d.track ?: "0"),
-                                Modifier.weight(1f)
-                            )
+                                stringResource(R.string.so_f_track), track, editable, Modifier.weight(1f),
+                                KeyboardType.Number
+                            ) { track = it.filter(Char::isDigit).take(4) }
                             TagField(
-                                stringResource(R.string.so_f_year),
-                                if (d == null) "" else (d.year ?: "0"),
-                                Modifier.weight(1f)
-                            )
+                                stringResource(R.string.so_f_year), year, editable, Modifier.weight(1f),
+                                KeyboardType.Number
+                            ) { year = it.filter(Char::isDigit).take(4) }
                         }
-                        TagField(stringResource(R.string.so_f_genre), text(d?.genre))
+                        TagField(stringResource(R.string.so_f_genre), genre, editable) { genre = it }
 
-                        // Espacio para que el último campo no quede tapado por el checkbox flotante
-                        Spacer(Modifier.height(110.dp))
+                        Spacer(Modifier.height(48.dp))
                     }
-                }
-
-                // ---- "Editar archivo de audio también" (flotante abajo) ----
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .navigationBarsPadding()
-                        .padding(bottom = 24.dp)
-                        .clip(RoundedCornerShape(28.dp))
-                        .background(AloColors.Sf3)
-                        .clickable { editFile = !editFile }
-                        .padding(start = 10.dp, end = 20.dp, top = 4.dp, bottom = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Checkbox(
-                        checked = editFile,
-                        onCheckedChange = { editFile = it },
-                        colors = CheckboxDefaults.colors(
-                            checkedColor = accents.accent,
-                            checkmarkColor = AloColors.Bg,
-                            uncheckedColor = AloColors.Mut
-                        )
-                    )
-                    Text(
-                        text = stringResource(R.string.so_edit_file),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = AloColors.Ink
-                    )
                 }
             }
         }
     }
 }
 
-/** Campo de solo lectura con la etiqueta flotante y línea inferior (sin teclado ni edición). */
+/** Campo editable con la etiqueta flotante y línea inferior. */
 @Composable
-private fun TagField(label: String, value: String, modifier: Modifier = Modifier) {
+private fun TagField(
+    label: String,
+    value: String,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    onChange: (String) -> Unit
+) {
     TextField(
         value = value,
-        onValueChange = {},
-        readOnly = true,
+        onValueChange = onChange,
+        readOnly = !enabled,
         singleLine = true,
         label = { Text(label) },
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         modifier = modifier.fillMaxWidth(),
         colors = TextFieldDefaults.colors(
             focusedContainerColor = Color.Transparent,
@@ -467,7 +587,7 @@ private fun TagField(label: String, value: String, modifier: Modifier = Modifier
             unfocusedLabelColor = AloColors.Mut,
             focusedIndicatorColor = AloColors.Ln2,
             unfocusedIndicatorColor = AloColors.Ln2,
-            cursorColor = Color.Transparent
+            cursorColor = MaterialTheme.accents.accent
         )
     )
 }

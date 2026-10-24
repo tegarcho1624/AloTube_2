@@ -9,6 +9,8 @@ import android.util.LruCache
 import android.util.Size
 import com.alotube.app.R
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
@@ -45,6 +47,19 @@ object AudioMetadataRepository {
 
     // Un MediaMetadataRetriever por archivo es pesado: se limitan las lecturas en paralelo
     private val gate = Semaphore(3)
+
+    private val _version = MutableStateFlow(0)
+
+    /** Sube cada vez que se editan las etiquetas de un archivo: las pantallas lo usan para releerlas. */
+    val version: StateFlow<Int> = _version
+
+    /** Olvida lo guardado en memoria de [uri] (tras editar sus etiquetas) y avisa a las pantallas. */
+    fun invalidate(uri: Uri) {
+        val key = uri.toString()
+        infoCache.remove(key)
+        largeCache.remove(key)
+        _version.value = _version.value + 1
+    }
 
     /** Etiquetas del archivo. [fallbackTitle] = nombre del archivo sin extensión. */
     suspend fun load(ctx: Context, uri: Uri, fallbackTitle: String): AudioInfo {

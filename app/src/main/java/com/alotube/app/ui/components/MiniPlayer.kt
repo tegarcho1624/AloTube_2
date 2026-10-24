@@ -74,7 +74,8 @@ private fun MiniPlayer(
 ) {
     val ctx = LocalContext.current
     val accents = MaterialTheme.accents
-    val info by produceState<AudioInfo?>(initialValue = null, item.url) {
+    val tagsVersion by AudioMetadataRepository.version.collectAsState()
+    val info by produceState<AudioInfo?>(initialValue = null, item.url, tagsVersion) {
         value = AudioMetadataRepository.load(ctx, Uri.parse(item.url), item.title)
     }
 

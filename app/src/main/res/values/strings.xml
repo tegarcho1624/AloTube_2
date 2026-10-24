@@ -199,6 +199,16 @@
     <string name="so_unknown">Desconocido</string>
     <string name="so_no_cover">Sin carátula del álbum</string>
     <string name="so_edit_file">Editar archivo de audio también</string>
+    <string name="so_saved">Etiquetas guardadas</string>
+    <string name="so_no_changes">No hay cambios que guardar</string>
+    <string name="so_err_not_opus">Formato no soportado todavía: por ahora solo se pueden editar archivos .opus</string>
+    <string name="so_err_permission">Sin permiso para modificar este archivo</string>
+    <string name="so_err_permission_denied">No autorizaste modificar el archivo; no se guardó nada</string>
+    <string name="so_err_read">No se pudo leer el archivo</string>
+    <string name="so_err_write">No se pudo escribir en el archivo; se restauró el original</string>
+    <string name="so_err_verify">El archivo no quedó bien tras guardar; se restauró el original</string>
+    <string name="so_err_structure">El archivo está dañado o tiene una estructura que no se puede editar</string>
+    <string name="so_err_unknown">Error al guardar las etiquetas</string>
     <string name="so_f_name">Nombre</string>
     <string name="so_f_album">Álbum</string>
     <string name="so_f_artist">Artista</string>
