@@ -167,7 +167,7 @@ private fun MusicContent(
 
             // Nivel 1: carpetas (toque largo + arrastre = reordenar; toque largo quieto = menú del ícono)
             else -> AudioFolderGrid(
-                folders = state.visibleAudioFolders,
+                source = state.visibleAudioFolders,
                 tracksOf = state::audioTracks,
                 onOpenFolder = onOpenFolder,
                 onOrder = onFolderOrder,
@@ -252,7 +252,7 @@ private fun AudioTrackList(
  */
 @Composable
 fun AudioFolderGrid(
-    folders source: List<LocalFolder>,
+    source: List<LocalFolder>,
     tracksOf: (Long) -> List<LocalMedia>,
     onOpenFolder: (Long) -> Unit,
     onOrder: (List<Long>) -> Unit,

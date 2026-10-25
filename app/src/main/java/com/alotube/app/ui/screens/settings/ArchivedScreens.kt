@@ -85,7 +85,7 @@ fun ArchivedFoldersScreen(kind: FolderKind, onBack: () -> Unit) {
                 )
 
                 music -> AudioFolderGrid(
-                    folders = folders,
+                    source = folders,
                     tracksOf = state::audioTracks,
                     onOpenFolder = {},
                     onOrder = { ids -> viewModel.setFolderOrder(FolderKind.MUSIC, ids) },
