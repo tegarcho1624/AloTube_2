@@ -2,8 +2,12 @@
 
 package com.alotube.app
 
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
+import android.os.Build
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaSession
@@ -31,9 +35,19 @@ class PlaybackService : MediaSessionService() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        session = MediaSession.Builder(this, PlayerProvider.controlPlayer(this))
+        val mediaSession = MediaSession.Builder(this, PlayerProvider.controlPlayer(this))
             .setSessionActivity(sessionActivity)
             .build()
+        session = mediaSession
+        // Se registra la sesión YA, sin esperar a que un controlador se conecte: así Media3 puede publicar
+        // la notificación en cuanto el reproductor deje de estar en reposo (algunos fabricantes, como ZUI de
+        // Lenovo, tardan o no llegan a conectar el controlador del sistema).
+        addSession(mediaSession)
+
+        // El canal se crea ANTES que el proveedor de Media3 (que solo crea el suyo si no existe), con
+        // importancia normal y sin sonido ni vibración. Con importancia baja, algunas capas (ZUI) la
+        // mandan a "Silenciosas" o la ocultan. Id nuevo: la importancia de un canal ya creado no se puede subir.
+        ensureChannel()
 
         val provider = DefaultMediaNotificationProvider.Builder(this)
             .setChannelId(CHANNEL_ID)
@@ -41,6 +55,28 @@ class PlaybackService : MediaSessionService() {
             .build()
         provider.setSmallIcon(R.drawable.ic_logo)
         setMediaNotificationProvider(provider)
+    }
+
+    private fun ensureChannel() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        try {
+            val manager = getSystemService(NotificationManager::class.java) ?: return
+            if (manager.getNotificationChannel(CHANNEL_ID) != null) return
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                getString(R.string.notif_channel_name),
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                setSound(null, null)
+                enableVibration(false)
+                enableLights(false)
+                setShowBadge(false)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            }
+            manager.createNotificationChannel(channel)
+        } catch (_: Exception) {
+            // Sin canal propio, Media3 crea el suyo
+        }
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
@@ -64,7 +100,7 @@ class PlaybackService : MediaSessionService() {
     }
 
     companion object {
-        private const val CHANNEL_ID = "alotube_playback"
+        private const val CHANNEL_ID = "alotube_playback_v2"
 
         @Volatile
         var running = false
