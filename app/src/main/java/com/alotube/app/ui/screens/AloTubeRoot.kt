@@ -73,7 +73,11 @@ fun AloTubeRoot(
                     1 -> MusicScreen(onVideoClick = onVideoClick)
                     2 -> LocalPlayerScreen(onVideoClick = onVideoClick)
                     3 -> LibraryScreen(onVideoClick = onVideoClick)
-                    else -> SettingsScreen(onAccentChanged = onAccentChanged, onLoggedOut = onLoggedOut)
+                    else -> SettingsScreen(
+                        onAccentChanged = onAccentChanged,
+                        onLoggedOut = onLoggedOut,
+                        onVideoClick = onVideoClick
+                    )
                 }
             }
         }

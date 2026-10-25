@@ -16,6 +16,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.alotube.app.R
+import com.alotube.app.data.model.VideoItem
 import com.alotube.app.data.local.FolderKind
 import com.alotube.app.ui.screens.settings.AppearanceScreen
 import com.alotube.app.ui.screens.settings.ArchivedFoldersScreen
@@ -36,7 +37,11 @@ import com.alotube.app.ui.theme.accents
  * de acento (recreate) se vuelve a la misma pantalla.
  */
 @Composable
-fun SettingsScreen(onAccentChanged: () -> Unit, onLoggedOut: () -> Unit) {
+fun SettingsScreen(
+    onAccentChanged: () -> Unit,
+    onLoggedOut: () -> Unit,
+    onVideoClick: (List<VideoItem>, Int) -> Unit
+) {
     val nav = rememberNavController()
     val back: () -> Unit = { nav.popBackStack() }
 
@@ -88,10 +93,10 @@ fun SettingsScreen(onAccentChanged: () -> Unit, onLoggedOut: () -> Unit) {
             )
         }
         composable(SettingsRoutes.ARCHIVED_MUSIC) {
-            ArchivedFoldersScreen(kind = FolderKind.MUSIC, onBack = back)
+            ArchivedFoldersScreen(kind = FolderKind.MUSIC, onBack = back, onVideoClick = onVideoClick)
         }
         composable(SettingsRoutes.ARCHIVED_VIDEO) {
-            ArchivedFoldersScreen(kind = FolderKind.VIDEO, onBack = back)
+            ArchivedFoldersScreen(kind = FolderKind.VIDEO, onBack = back, onVideoClick = onVideoClick)
         }
     }
 }

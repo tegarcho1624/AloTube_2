@@ -100,6 +100,9 @@ data class LocalMediaUiState(
     /** Audios de una carpeta (en orden por título). */
     fun audioTracks(folderId: Long): List<LocalMedia> = audioGroups[folderId].orEmpty()
 
+    /** Videos de una carpeta cualquiera (en el orden elegido por el usuario). */
+    fun videosOf(folderId: Long): List<LocalMedia> = videoGroups[folderId].orEmpty()
+
     /** Videos de la carpeta abierta (vacío si no hay ninguna abierta). */
     val folderVideos: List<LocalMedia>
         get() = currentFolderId?.let { id -> videoGroups[id] } ?: emptyList()

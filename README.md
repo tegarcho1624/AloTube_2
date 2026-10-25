@@ -196,3 +196,7 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 - **Ajustes > Archivados** (última fila de `SettingsMenuScreen`): `ArchivedMenuScreen` con "Música" y "Video Player" → `ArchivedFoldersScreen`, que reutiliza la MISMA cuadrícula (`AudioFolderGrid` / `VideoFolderGrid`, ahora públicas) con la lista de archivadas: arrastrar para reordenar, ícono personalizado y contador. Tocar una carpeta archivada no la abre (se desarchiva con toque largo). Usa el ViewModel de la Activity (el mismo de las pestañas).
 - `setFolderOrder` ahora reparte un orden parcial en los huecos de esas carpetas, así reordenar las archivadas no desordena las visibles (y al revés).
 - `versionCode` 26. **No cambia:** reproducción ni arrastre de archivos.
+
+### Abrir carpetas archivadas
+- La vista de contenido de una carpeta se extrajo a `AudioFolderView` (MusicScreen.kt) y `VideoFolderView` (LocalPlayerScreen.kt): "Raíz > Carpeta", lupa/búsqueda local, lista o cuadrícula con arrastre y reproducción. Las usan las pestañas Música / Video Player y Ajustes > Archivados (un toque en una carpeta archivada la abre; raíz = "Archivados"; atrás vuelve a la cuadrícula de archivadas). No comprueban `isArchived`: muestran lo que se les pasa (`audioTracks(id)` / `videosOf(id)`).
+- La carpeta abierta en Archivados es un estado local de esa pantalla (`openId`), no `currentAudioFolderId` del ViewModel, así que no cambia lo que muestran las pestañas. `SettingsScreen` recibe `onVideoClick` desde `AloTubeRoot` para reproducir. `versionCode` 27.

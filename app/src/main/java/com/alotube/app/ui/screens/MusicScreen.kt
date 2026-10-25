@@ -70,43 +70,84 @@ fun MusicScreen(
     LaunchedEffect(permission.granted) { if (permission.granted) viewModel.load() }
 
     val folder = state.currentAudioFolder
-    val search = rememberFolderSearch(folder?.id)
-    BackHandler(enabled = folder != null) { viewModel.closeAudioFolder() }
-    // Con la búsqueda abierta, atrás la cierra primero
-    BackHandler(enabled = folder != null && search.active) { search.close() }
+
+    if (folder != null && permission.granted && state.loaded) {
+        // Nivel 2: canciones de la carpeta (la misma vista que se usa en Ajustes > Archivados)
+        AudioFolderView(
+            folder = folder,
+            tracks = state.audioTracks(folder.id),
+            root = stringResource(R.string.mp_root),
+            onBack = viewModel::closeAudioFolder,
+            onPlay = { list, index -> onVideoClick(list.map { it.toVideoItem() }, index) },
+            onMissing = viewModel::load,
+            onTrackOrder = { ids -> viewModel.setFileOrder(FolderKind.MUSIC, folder.id, ids) }
+        )
+        return
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        if (folder == null) {
-            LocalHeader(
-                title = stringResource(R.string.mp_title)
-            )
-        } else {
-            if (search.active) {
-                FolderSearchBar(search = search, onBack = viewModel::closeAudioFolder)
-            } else {
-                Breadcrumb(
-                    name = folder.name,
-                    onBack = viewModel::closeAudioFolder,
-                    root = stringResource(R.string.mp_root),
-                    onSearch = { search.active = true }
-                )
-            }
-        }
+        LocalHeader(title = stringResource(R.string.mp_title))
 
         if (!permission.granted) {
             PermissionContent(permission)
         } else {
             MusicContent(
                 state = state,
-                query = search.query,
                 onRetry = viewModel::load,
                 onOpenFolder = viewModel::openAudioFolder,
-                onPlay = { list, index -> onVideoClick(list.map { it.toVideoItem() }, index) },
-                onMissing = viewModel::load,
                 onFolderOrder = { ids -> viewModel.setFolderOrder(FolderKind.MUSIC, ids) },
-                onFolderArchive = { f -> viewModel.setArchived(FolderKind.MUSIC, f.id, true) },
-                onTrackOrder = { bucketId, ids -> viewModel.setFileOrder(FolderKind.MUSIC, bucketId, ids) }
+                onFolderArchive = { f -> viewModel.setArchived(FolderKind.MUSIC, f.id, true) }
             )
+        }
+    }
+}
+
+/**
+ * Canciones de UNA carpeta: "Raíz > Carpeta" con lupa, búsqueda local, lista con arrastre y reproducción.
+ * La usan "Música" ([root] = Música) y Ajustes > Archivados ([root] = Archivados): no mira si la carpeta está
+ * archivada, solo muestra las [tracks] que se le pasan. Atrás ([onBack]) cierra la búsqueda y luego la carpeta.
+ */
+@Composable
+fun AudioFolderView(
+    folder: LocalFolder,
+    tracks: List<LocalMedia>,
+    root: String,
+    onBack: () -> Unit,
+    onPlay: (List<LocalMedia>, Int) -> Unit,
+    onMissing: () -> Unit,
+    onTrackOrder: (List<Long>) -> Unit
+) {
+    val search = rememberFolderSearch(folder.id)
+    val play = rememberSafePlay(onPlay, onMissing)
+    val now = rememberNowPlaying()
+    BackHandler { onBack() }
+    // Con la búsqueda abierta, atrás la cierra primero
+    BackHandler(enabled = search.active) { search.close() }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        if (search.active) {
+            FolderSearchBar(search = search, onBack = onBack)
+        } else {
+            Breadcrumb(name = folder.name, onBack = onBack, root = root, onSearch = { search.active = true })
+        }
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (search.query.isBlank()) {
+                // Toque largo + arrastre = cambiar el orden
+                AudioTrackList(
+                    source = tracks,
+                    currentUrl = now.item?.url,
+                    playing = now.isPlaying,
+                    onPlay = play,
+                    onOrder = onTrackOrder
+                )
+            } else {
+                AudioSearchResults(
+                    results = tracks.filterByName(search.query),
+                    currentUrl = now.item?.url,
+                    playing = now.isPlaying,
+                    onPlay = play
+                )
+            }
         }
     }
 }
@@ -114,19 +155,12 @@ fun MusicScreen(
 @Composable
 private fun MusicContent(
     state: LocalMediaUiState,
-    query: String,
     onRetry: () -> Unit,
     onOpenFolder: (Long) -> Unit,
-    onPlay: (List<LocalMedia>, Int) -> Unit,
-    onMissing: () -> Unit,
     onFolderOrder: (List<Long>) -> Unit,
-    onFolderArchive: (LocalFolder) -> Unit,
-    onTrackOrder: (Long, List<Long>) -> Unit
+    onFolderArchive: (LocalFolder) -> Unit
 ) {
     val accents = MaterialTheme.accents
-    val play = rememberSafePlay(onPlay, onMissing)
-    val now = rememberNowPlaying()
-    val folder = state.currentAudioFolder
 
     Box(modifier = Modifier.fillMaxSize()) {
         when {
@@ -146,24 +180,6 @@ private fun MusicContent(
                 text = stringResource(R.string.lp_empty_audios),
                 modifier = Modifier.align(Alignment.Center)
             )
-
-            // Nivel 2: canciones de la carpeta (toque largo + arrastre = cambiar el orden)
-            folder != null -> if (query.isBlank()) {
-                AudioTrackList(
-                    source = state.audioTracks(folder.id),
-                    currentUrl = now.item?.url,
-                    playing = now.isPlaying,
-                    onPlay = play,
-                    onOrder = { ids -> onTrackOrder(folder.id, ids) }
-                )
-            } else {
-                AudioSearchResults(
-                    results = state.audioTracks(folder.id).filterByName(query),
-                    currentUrl = now.item?.url,
-                    playing = now.isPlaying,
-                    onPlay = play
-                )
-            }
 
             // Nivel 1: carpetas (toque largo + arrastre = reordenar; toque largo quieto = menú del ícono)
             else -> AudioFolderGrid(

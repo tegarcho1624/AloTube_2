@@ -77,40 +77,72 @@ fun LocalPlayerScreen(
     LaunchedEffect(permission.granted) { if (permission.granted) viewModel.load() }
 
     val folder = state.currentFolder
-    val search = rememberFolderSearch(folder?.id)
 
-    // Atrás dentro de una carpeta = volver a la vista de carpetas
-    BackHandler(enabled = folder != null) { viewModel.closeFolder() }
-    // Con la búsqueda abierta, atrás la cierra primero
-    BackHandler(enabled = folder != null && search.active) { search.close() }
+    if (folder != null && permission.granted && state.loaded) {
+        // Nivel 2: videos de la carpeta (la misma vista que se usa en Ajustes > Archivados)
+        VideoFolderView(
+            folder = folder,
+            videos = state.folderVideos,
+            root = stringResource(R.string.lp_breadcrumb_root),
+            onBack = viewModel::closeFolder,
+            onPlay = { list, index -> onVideoClick(list.map { it.toVideoItem() }, index) },
+            onMissing = viewModel::load,
+            onFileOrder = { ids -> viewModel.setFileOrder(FolderKind.VIDEO, folder.id, ids) }
+        )
+        return
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        if (folder == null) {
-            LocalHeader(
-                title = stringResource(R.string.lp_title)
-            )
-        } else {
-            if (search.active) {
-                FolderSearchBar(search = search, onBack = viewModel::closeFolder)
-            } else {
-                Breadcrumb(name = folder.name, onBack = viewModel::closeFolder, onSearch = { search.active = true })
-            }
-        }
+        LocalHeader(title = stringResource(R.string.lp_title))
 
         if (!permission.granted) {
             PermissionContent(permission)
         } else {
             VideoFoldersContent(
                 state = state,
-                query = search.query,
                 onRetry = viewModel::load,
                 onOpenFolder = viewModel::openFolder,
-                onPlay = { list, index -> onVideoClick(list.map { it.toVideoItem() }, index) },
-                onMissing = viewModel::load,
                 onFolderOrder = { ids -> viewModel.setFolderOrder(FolderKind.VIDEO, ids) },
-                onFolderArchive = { f -> viewModel.setArchived(FolderKind.VIDEO, f.id, true) },
-                onFileOrder = { bucketId, ids -> viewModel.setFileOrder(FolderKind.VIDEO, bucketId, ids) }
+                onFolderArchive = { f -> viewModel.setArchived(FolderKind.VIDEO, f.id, true) }
             )
+        }
+    }
+}
+
+/**
+ * Videos de UNA carpeta: "Raíz > Carpeta" con lupa, búsqueda local, cuadrícula con arrastre y reproducción.
+ * La usan "Video Player" y Ajustes > Archivados: no mira si la carpeta está archivada, solo muestra los
+ * [videos] que se le pasan. Atrás ([onBack]) cierra la búsqueda y luego la carpeta.
+ */
+@Composable
+fun VideoFolderView(
+    folder: LocalFolder,
+    videos: List<LocalMedia>,
+    root: String,
+    onBack: () -> Unit,
+    onPlay: (List<LocalMedia>, Int) -> Unit,
+    onMissing: () -> Unit,
+    onFileOrder: (List<Long>) -> Unit
+) {
+    val search = rememberFolderSearch(folder.id)
+    val play = rememberSafePlay(onPlay, onMissing)
+    BackHandler { onBack() }
+    // Con la búsqueda abierta, atrás la cierra primero
+    BackHandler(enabled = search.active) { search.close() }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        if (search.active) {
+            FolderSearchBar(search = search, onBack = onBack)
+        } else {
+            Breadcrumb(name = folder.name, onBack = onBack, root = root, onSearch = { search.active = true })
+        }
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (search.query.isBlank()) {
+                // Toque largo + arrastre = cambiar el orden
+                VideoFileGrid(source = videos, onPlay = play, onOrder = onFileOrder)
+            } else {
+                VideoSearchResults(results = videos.filterByName(search.query), onPlay = play)
+            }
         }
     }
 }
@@ -164,18 +196,12 @@ fun Breadcrumb(
 @Composable
 private fun VideoFoldersContent(
     state: LocalMediaUiState,
-    query: String,
     onRetry: () -> Unit,
     onOpenFolder: (Long) -> Unit,
-    onPlay: (List<LocalMedia>, Int) -> Unit,
-    onMissing: () -> Unit,
     onFolderOrder: (List<Long>) -> Unit,
-    onFolderArchive: (LocalFolder) -> Unit,
-    onFileOrder: (Long, List<Long>) -> Unit
+    onFolderArchive: (LocalFolder) -> Unit
 ) {
     val accents = MaterialTheme.accents
-    val play = rememberSafePlay(onPlay, onMissing)
-    val folder = state.currentFolder
 
     Box(modifier = Modifier.fillMaxSize()) {
         when {
@@ -195,17 +221,6 @@ private fun VideoFoldersContent(
                 text = stringResource(R.string.lp_empty_videos),
                 modifier = Modifier.align(Alignment.Center)
             )
-
-            // Nivel 2: videos de la carpeta (toque largo + arrastre = cambiar el orden)
-            folder != null -> if (query.isBlank()) {
-                VideoFileGrid(
-                    source = state.folderVideos,
-                    onPlay = play,
-                    onOrder = { ids -> onFileOrder(folder.id, ids) }
-                )
-            } else {
-                VideoSearchResults(results = state.folderVideos.filterByName(query), onPlay = play)
-            }
 
             // Nivel 1: carpetas (toque largo + arrastre = reordenar; toque largo quieto = menú del ícono)
             else -> VideoFolderGrid(

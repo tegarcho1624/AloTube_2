@@ -15,6 +15,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -24,7 +27,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alotube.app.R
 import com.alotube.app.data.local.FolderKind
+import com.alotube.app.data.local.toVideoItem
+import com.alotube.app.data.model.VideoItem
 import com.alotube.app.ui.screens.AudioFolderGrid
+import com.alotube.app.ui.screens.AudioFolderView
+import com.alotube.app.ui.screens.VideoFolderView
 import com.alotube.app.ui.screens.EmptyMedia
 import com.alotube.app.ui.screens.VideoFolderGrid
 import com.alotube.app.ui.theme.AloColors
@@ -57,10 +64,15 @@ private fun ArchivedEntry(title: String, onClick: () -> Unit) {
 /**
  * Carpetas archivadas de Música o Video Player. Es la MISMA cuadrícula de las pestañas (AudioFolderGrid /
  * VideoFolderGrid) con la lista de archivadas: arrastrar para reordenar, ícono personalizado, contador, y el
- * menú de toque largo con "Desarchivar". Usa el ViewModel de la Activity (el mismo de las pestañas).
+ * menú de toque largo con "Desarchivar". Un toque abre la carpeta con la MISMA vista de contenido que las
+ * pestañas (AudioFolderView / VideoFolderView). Usa el ViewModel de la Activity (el mismo de las pestañas).
  */
 @Composable
-fun ArchivedFoldersScreen(kind: FolderKind, onBack: () -> Unit) {
+fun ArchivedFoldersScreen(
+    kind: FolderKind,
+    onBack: () -> Unit,
+    onVideoClick: (List<VideoItem>, Int) -> Unit
+) {
     val activity = LocalContext.current.findComponentActivity()
     val viewModel: LocalMediaViewModel =
         if (activity != null) viewModel(viewModelStoreOwner = activity) else viewModel()
@@ -69,6 +81,36 @@ fun ArchivedFoldersScreen(kind: FolderKind, onBack: () -> Unit) {
 
     val music = kind == FolderKind.MUSIC
     val folders = if (music) state.archivedAudioFolders else state.archivedFolders
+    // Carpeta abierta dentro de Archivados (solo en esta pantalla: no toca la carpeta abierta de las pestañas)
+    var openId by rememberSaveable { mutableStateOf<Long?>(null) }
+    val open = openId?.let { id -> folders.firstOrNull { it.id == id } }
+
+    if (open != null) {
+        // La MISMA vista de contenido que Música / Video Player; atrás vuelve a esta cuadrícula
+        val root = stringResource(R.string.fa_title)
+        if (music) {
+            AudioFolderView(
+                folder = open,
+                tracks = state.audioTracks(open.id),
+                root = root,
+                onBack = { openId = null },
+                onPlay = { list, index -> onVideoClick(list.map { it.toVideoItem() }, index) },
+                onMissing = viewModel::load,
+                onTrackOrder = { ids -> viewModel.setFileOrder(FolderKind.MUSIC, open.id, ids) }
+            )
+        } else {
+            VideoFolderView(
+                folder = open,
+                videos = state.videosOf(open.id),
+                root = root,
+                onBack = { openId = null },
+                onPlay = { list, index -> onVideoClick(list.map { it.toVideoItem() }, index) },
+                onMissing = viewModel::load,
+                onFileOrder = { ids -> viewModel.setFileOrder(FolderKind.VIDEO, open.id, ids) }
+            )
+        }
+        return
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         SettingsTopBar(stringResource(if (music) R.string.mp_title else R.string.lp_title), onBack)
@@ -87,7 +129,7 @@ fun ArchivedFoldersScreen(kind: FolderKind, onBack: () -> Unit) {
                 music -> AudioFolderGrid(
                     source = folders,
                     tracksOf = state::audioTracks,
-                    onOpenFolder = {},
+                    onOpenFolder = { openId = it },
                     onOrder = { ids -> viewModel.setFolderOrder(FolderKind.MUSIC, ids) },
                     onArchive = { f -> viewModel.setArchived(FolderKind.MUSIC, f.id, false) },
                     archived = true
@@ -95,7 +137,7 @@ fun ArchivedFoldersScreen(kind: FolderKind, onBack: () -> Unit) {
 
                 else -> VideoFolderGrid(
                     source = folders,
-                    onOpenFolder = {},
+                    onOpenFolder = { openId = it },
                     onOrder = { ids -> viewModel.setFolderOrder(FolderKind.VIDEO, ids) },
                     onArchive = { f -> viewModel.setArchived(FolderKind.VIDEO, f.id, false) },
                     archived = true
