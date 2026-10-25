@@ -70,7 +70,10 @@ fun MusicScreen(
     LaunchedEffect(permission.granted) { if (permission.granted) viewModel.load() }
 
     val folder = state.currentAudioFolder
+    val search = rememberFolderSearch(folder?.id)
     BackHandler(enabled = folder != null) { viewModel.closeAudioFolder() }
+    // Con la búsqueda abierta, atrás la cierra primero
+    BackHandler(enabled = folder != null && search.active) { search.close() }
 
     Column(modifier = Modifier.fillMaxSize()) {
         if (folder == null) {
@@ -78,11 +81,16 @@ fun MusicScreen(
                 title = stringResource(R.string.mp_title)
             )
         } else {
-            Breadcrumb(
-                name = folder.name,
-                onBack = viewModel::closeAudioFolder,
-                root = stringResource(R.string.mp_root)
-            )
+            if (search.active) {
+                FolderSearchBar(search = search, onBack = viewModel::closeAudioFolder)
+            } else {
+                Breadcrumb(
+                    name = folder.name,
+                    onBack = viewModel::closeAudioFolder,
+                    root = stringResource(R.string.mp_root),
+                    onSearch = { search.active = true }
+                )
+            }
         }
 
         if (!permission.granted) {
@@ -90,6 +98,7 @@ fun MusicScreen(
         } else {
             MusicContent(
                 state = state,
+                query = search.query,
                 onRetry = viewModel::load,
                 onOpenFolder = viewModel::openAudioFolder,
                 onPlay = { list, index -> onVideoClick(list.map { it.toVideoItem() }, index) },
@@ -104,6 +113,7 @@ fun MusicScreen(
 @Composable
 private fun MusicContent(
     state: LocalMediaUiState,
+    query: String,
     onRetry: () -> Unit,
     onOpenFolder: (Long) -> Unit,
     onPlay: (List<LocalMedia>, Int) -> Unit,
@@ -136,19 +146,58 @@ private fun MusicContent(
             )
 
             // Nivel 2: canciones de la carpeta (toque largo + arrastre = cambiar el orden)
-            folder != null -> AudioTrackList(
-                source = state.audioTracks(folder.id),
-                currentUrl = now.item?.url,
-                playing = now.isPlaying,
-                onPlay = play,
-                onOrder = { ids -> onTrackOrder(folder.id, ids) }
-            )
+            folder != null -> if (query.isBlank()) {
+                AudioTrackList(
+                    source = state.audioTracks(folder.id),
+                    currentUrl = now.item?.url,
+                    playing = now.isPlaying,
+                    onPlay = play,
+                    onOrder = { ids -> onTrackOrder(folder.id, ids) }
+                )
+            } else {
+                AudioSearchResults(
+                    results = state.audioTracks(folder.id).filterByName(query),
+                    currentUrl = now.item?.url,
+                    playing = now.isPlaying,
+                    onPlay = play
+                )
+            }
 
             // Nivel 1: carpetas (toque largo + arrastre = reordenar; toque largo quieto = menú del ícono)
             else -> AudioFolderGrid(
                 state = state,
                 onOpenFolder = onOpenFolder,
                 onOrder = onFolderOrder
+            )
+        }
+    }
+}
+
+/** Resultado de la búsqueda en una carpeta de música: solo mostrar y reproducir (sin arrastrar, para no alterar el orden guardado). */
+@Composable
+private fun AudioSearchResults(
+    results: List<LocalMedia>,
+    currentUrl: String?,
+    playing: Boolean,
+    onPlay: (List<LocalMedia>, Int) -> Unit
+) {
+    if (results.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            EmptyMedia(text = stringResource(R.string.fs_none))
+        }
+        return
+    }
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        itemsIndexed(results, key = { _, media -> media.id }) { index, media ->
+            AudioTrackRow(
+                media = media,
+                current = currentUrl != null && currentUrl == media.uri.toString(),
+                playing = playing,
+                onClick = { onPlay(results, index) }
             )
         }
     }

@@ -183,3 +183,9 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 
 ### Carátulas: llenar todo el recuadro
 - `AudioCover` recibe `contentScale` (por defecto `Crop`, como antes). El disco grande de `AudioPlayerContent` y la miniatura de `AudioTrackRow` usan `ContentScale.FillBounds` (llena el 100 % del recuadro con las esquinas redondeadas de siempre). El mini-reproductor y la tarjeta de carpeta no cambian. Solo visual: no se toca el .opus ni las etiquetas. `versionCode` 24.
+
+## Búsqueda dentro de carpetas (Música y Video Player)
+- En la barra "Música > Carpeta" / "Inicio > Carpeta" (`Breadcrumb`) hay una lupa a la derecha. Al tocarla la barra se convierte en `FolderSearchBar` (`ui/screens/FolderSearch.kt`): flecha atrás, campo de texto con el teclado abierto automáticamente y una X que cierra la búsqueda. Atrás con la búsqueda abierta la cierra primero.
+- Filtra en tiempo real por nombre de archivo (`name.contains(query, ignoreCase = true)`). Sin resultados: "No se encontraron archivos" centrado (`fs_none`). Con texto en el campo se muestran los resultados sin arrastre (así el orden guardado nunca se altera); con el campo vacío vuelve la lista normal con arrastre. Tocar un resultado reproduce con los resultados como cola.
+- `rememberFolderSearch(folder?.id)`: al salir de la carpeta y volver a entrar la búsqueda está cerrada y vacía. Solo afecta a la carpeta abierta, no a la vista de carpetas.
+- `versionCode` 25. **No cambia:** arrastrar y soltar, reproductor, mini-reproductor ni la búsqueda de YouTube.

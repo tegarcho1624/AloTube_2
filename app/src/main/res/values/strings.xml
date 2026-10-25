@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">AloTube 2.0</string>
+    <string name="fs_hint">Buscar archivos</string>
+    <string name="fs_open">Buscar en la carpeta</string>
+    <string name="fs_close">Cerrar búsqueda</string>
+    <string name="fs_none">No se encontraron archivos</string>
     <string name="search_hint">Buscar videos</string>
     <string name="clear">Borrar</string>
     <string name="play_toast">Reproducir: %1$s</string>

@@ -77,9 +77,12 @@ fun LocalPlayerScreen(
     LaunchedEffect(permission.granted) { if (permission.granted) viewModel.load() }
 
     val folder = state.currentFolder
+    val search = rememberFolderSearch(folder?.id)
 
     // Atrás dentro de una carpeta = volver a la vista de carpetas
     BackHandler(enabled = folder != null) { viewModel.closeFolder() }
+    // Con la búsqueda abierta, atrás la cierra primero
+    BackHandler(enabled = folder != null && search.active) { search.close() }
 
     Column(modifier = Modifier.fillMaxSize()) {
         if (folder == null) {
@@ -87,7 +90,11 @@ fun LocalPlayerScreen(
                 title = stringResource(R.string.lp_title)
             )
         } else {
-            Breadcrumb(name = folder.name, onBack = viewModel::closeFolder)
+            if (search.active) {
+                FolderSearchBar(search = search, onBack = viewModel::closeFolder)
+            } else {
+                Breadcrumb(name = folder.name, onBack = viewModel::closeFolder, onSearch = { search.active = true })
+            }
         }
 
         if (!permission.granted) {
@@ -95,6 +102,7 @@ fun LocalPlayerScreen(
         } else {
             VideoFoldersContent(
                 state = state,
+                query = search.query,
                 onRetry = viewModel::load,
                 onOpenFolder = viewModel::openFolder,
                 onPlay = { list, index -> onVideoClick(list.map { it.toVideoItem() }, index) },
@@ -111,7 +119,8 @@ fun LocalPlayerScreen(
 fun Breadcrumb(
     name: String,
     onBack: () -> Unit,
-    root: String = stringResource(R.string.lp_breadcrumb_root)
+    root: String = stringResource(R.string.lp_breadcrumb_root),
+    onSearch: (() -> Unit)? = null
 ) {
     Row(
         modifier = Modifier
@@ -147,12 +156,14 @@ fun Breadcrumb(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
         )
+        if (onSearch != null) FolderSearchButton(onClick = onSearch)
     }
 }
 
 @Composable
 private fun VideoFoldersContent(
     state: LocalMediaUiState,
+    query: String,
     onRetry: () -> Unit,
     onOpenFolder: (Long) -> Unit,
     onPlay: (List<LocalMedia>, Int) -> Unit,
@@ -184,11 +195,15 @@ private fun VideoFoldersContent(
             )
 
             // Nivel 2: videos de la carpeta (toque largo + arrastre = cambiar el orden)
-            folder != null -> VideoFileGrid(
-                source = state.folderVideos,
-                onPlay = play,
-                onOrder = { ids -> onFileOrder(folder.id, ids) }
-            )
+            folder != null -> if (query.isBlank()) {
+                VideoFileGrid(
+                    source = state.folderVideos,
+                    onPlay = play,
+                    onOrder = { ids -> onFileOrder(folder.id, ids) }
+                )
+            } else {
+                VideoSearchResults(results = state.folderVideos.filterByName(query), onPlay = play)
+            }
 
             // Nivel 1: carpetas (toque largo + arrastre = reordenar; toque largo quieto = menú del ícono)
             else -> VideoFolderGrid(
@@ -196,6 +211,28 @@ private fun VideoFoldersContent(
                 onOpenFolder = onOpenFolder,
                 onOrder = onFolderOrder
             )
+        }
+    }
+}
+
+/** Resultado de la búsqueda en una carpeta de videos: solo mostrar y reproducir (sin arrastrar, para no alterar el orden guardado). */
+@Composable
+private fun VideoSearchResults(results: List<LocalMedia>, onPlay: (List<LocalMedia>, Int) -> Unit) {
+    if (results.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            EmptyMedia(text = stringResource(R.string.fs_none))
+        }
+        return
+    }
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(gridColumns()),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
+    ) {
+        itemsIndexed(results, key = { _, media -> media.id }) { index, media ->
+            LocalVideoCard(media = media, onClick = { onPlay(results, index) })
         }
     }
 }
