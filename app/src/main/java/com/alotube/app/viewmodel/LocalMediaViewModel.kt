@@ -3,6 +3,7 @@ package com.alotube.app.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.alotube.app.data.local.ArchiveStore
 import com.alotube.app.data.local.FolderKind
 import com.alotube.app.data.local.LocalFolder
 import com.alotube.app.data.local.LocalMedia
@@ -33,18 +34,29 @@ data class LocalMediaUiState(
     val videoFolderOrder: List<Long> = emptyList(),
     val audioFolderOrder: List<Long> = emptyList(),
     /** Orden de archivos por carpeta; clave = OrderStore.fileKey(tipo, bucketId). */
-    val fileOrders: Map<String, List<Long>> = emptyMap()
+    val fileOrders: Map<String, List<Long>> = emptyMap(),
+    /** Carpetas archivadas (claves de ArchiveStore). */
+    val archivedKeys: Set<String> = emptySet()
 ) {
     /** Carpetas con videos, ordenadas por nombre. */
     val folders: List<LocalFolder> by lazy(LazyThreadSafetyMode.NONE) {
         videos.groupBy { it.bucketId }
             .map { (id, list) ->
                 // La lista ya viene con lo más reciente primero: el primero sirve de portada
-                LocalFolder(id, list.first().bucketName.ifBlank { UNNAMED_FOLDER }, list.size, list.first())
+                LocalFolder(
+                    id, list.first().bucketName.ifBlank { UNNAMED_FOLDER }, list.size, list.first(),
+                    isArchived = ArchiveStore.key(FolderKind.VIDEO, id) in archivedKeys
+                )
             }
             .sortedBy { it.name.lowercase() }
             .applyOrder(videoFolderOrder) { it.id }
     }
+
+    /** Carpetas de video que se ven en "Video Player" (sin las archivadas). */
+    val visibleFolders: List<LocalFolder> get() = folders.filter { !it.isArchived }
+
+    /** Carpetas de video archivadas (Ajustes > Archivados). */
+    val archivedFolders: List<LocalFolder> get() = folders.filter { it.isArchived }
 
     /** Videos agrupados por carpeta (lo más reciente primero) con el orden elegido por el usuario aplicado. */
     private val videoGroups: Map<Long, List<LocalMedia>> by lazy(LazyThreadSafetyMode.NONE) {
@@ -67,11 +79,20 @@ data class LocalMediaUiState(
     val audioFolders: List<LocalFolder> by lazy(LazyThreadSafetyMode.NONE) {
         audioGroups
             .map { (id, list) ->
-                LocalFolder(id, list.first().bucketName.ifBlank { UNNAMED_FOLDER }, list.size, list.first())
+                LocalFolder(
+                    id, list.first().bucketName.ifBlank { UNNAMED_FOLDER }, list.size, list.first(),
+                    isArchived = ArchiveStore.key(FolderKind.MUSIC, id) in archivedKeys
+                )
             }
             .sortedBy { it.name.lowercase() }
             .applyOrder(audioFolderOrder) { it.id }
     }
+
+    /** Carpetas de música que se ven en "Música" (sin las archivadas). */
+    val visibleAudioFolders: List<LocalFolder> get() = audioFolders.filter { !it.isArchived }
+
+    /** Carpetas de música archivadas (Ajustes > Archivados). */
+    val archivedAudioFolders: List<LocalFolder> get() = audioFolders.filter { it.isArchived }
 
     val currentAudioFolder: LocalFolder?
         get() = currentAudioFolderId?.let { id -> audioFolders.firstOrNull { it.id == id } }
@@ -103,7 +124,8 @@ class LocalMediaViewModel(app: Application) : AndroidViewModel(app) {
             it.copy(
                 videoFolderOrder = OrderStore.folders(app, FolderKind.VIDEO),
                 audioFolderOrder = OrderStore.folders(app, FolderKind.MUSIC),
-                fileOrders = OrderStore.fileOrders(app)
+                fileOrders = OrderStore.fileOrders(app),
+                archivedKeys = ArchiveStore.all(app)
             )
         }
     }
@@ -150,10 +172,26 @@ class LocalMediaViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Guarda el nuevo orden de las carpetas (ids en el orden mostrado). */
     fun setFolderOrder(kind: FolderKind, ids: List<Long>) {
-        OrderStore.saveFolders(getApplication(), kind, ids)
+        // [ids] puede ser solo una parte (las visibles o las archivadas): se reparte en los huecos que esas
+        // carpetas ya ocupaban y las demás conservan su sitio, así un orden no desordena al otro.
+        val current = _state.value
+        val all = (if (kind == FolderKind.VIDEO) current.folders else current.audioFolders).map { it.id }
+        val subset = ids.filter { it in all }.distinct()
+        val inSubset = subset.toSet()
+        val next = subset.iterator()
+        val merged = all.map { if (it in inSubset) next.next() else it }
+        OrderStore.saveFolders(getApplication(), kind, merged)
         _state.update {
-            if (kind == FolderKind.VIDEO) it.copy(videoFolderOrder = ids) else it.copy(audioFolderOrder = ids)
+            if (kind == FolderKind.VIDEO) it.copy(videoFolderOrder = merged) else it.copy(audioFolderOrder = merged)
         }
+    }
+
+    /** Archiva o desarchiva una carpeta (solo una marca en la app; no toca los archivos). */
+    fun setArchived(kind: FolderKind, folderId: Long, archived: Boolean) {
+        val key = ArchiveStore.key(kind, folderId)
+        val next = if (archived) _state.value.archivedKeys + key else _state.value.archivedKeys - key
+        ArchiveStore.save(getApplication(), next)
+        _state.update { it.copy(archivedKeys = next) }
     }
 
     /** Guarda el nuevo orden de los archivos DENTRO de una carpeta (ids en el orden mostrado). */

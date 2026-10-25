@@ -16,7 +16,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.alotube.app.R
+import com.alotube.app.data.local.FolderKind
 import com.alotube.app.ui.screens.settings.AppearanceScreen
+import com.alotube.app.ui.screens.settings.ArchivedFoldersScreen
+import com.alotube.app.ui.screens.settings.ArchivedMenuScreen
 import com.alotube.app.ui.screens.settings.BackgroundsScreen
 import com.alotube.app.ui.screens.settings.FontsScreen
 import com.alotube.app.ui.screens.settings.SettingsMainScreen
@@ -76,6 +79,19 @@ fun SettingsScreen(onAccentChanged: () -> Unit, onLoggedOut: () -> Unit) {
         }
         composable(SettingsRoutes.DOWNLOAD) {
             SettingsPlaceholderScreen(stringResource(R.string.set_download), back)
+        }
+        composable(SettingsRoutes.ARCHIVED) {
+            ArchivedMenuScreen(
+                onBack = back,
+                onMusic = { nav.navigate(SettingsRoutes.ARCHIVED_MUSIC) },
+                onVideo = { nav.navigate(SettingsRoutes.ARCHIVED_VIDEO) }
+            )
+        }
+        composable(SettingsRoutes.ARCHIVED_MUSIC) {
+            ArchivedFoldersScreen(kind = FolderKind.MUSIC, onBack = back)
+        }
+        composable(SettingsRoutes.ARCHIVED_VIDEO) {
+            ArchivedFoldersScreen(kind = FolderKind.VIDEO, onBack = back)
         }
     }
 }

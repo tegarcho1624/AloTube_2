@@ -7,6 +7,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Icon
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -60,7 +67,14 @@ fun rememberFolderIcon(kind: FolderKind, folderId: Long): ImageBitmap? {
  * selector pueda devolver el resultado aunque el diálogo ya esté cerrado.
  */
 @Composable
-fun FolderIconMenu(kind: FolderKind, target: LocalFolder?, onDismiss: () -> Unit) {
+fun FolderIconMenu(
+    kind: FolderKind,
+    target: LocalFolder?,
+    onDismiss: () -> Unit,
+    /** Archivar (o Desarchivar si [archived]); null = sin esa opción. */
+    onArchive: ((LocalFolder) -> Unit)? = null,
+    archived: Boolean = false
+) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     // rememberSaveable: por si Android recrea la Activity mientras está abierto el selector
@@ -116,6 +130,36 @@ fun FolderIconMenu(kind: FolderKind, target: LocalFolder?, onDismiss: () -> Unit
                     pendingId = target.id
                     onDismiss()
                     picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                }
+                if (onArchive != null) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onArchive(target)
+                                onDismiss()
+                                Toast.makeText(
+                                    ctx,
+                                    if (archived) R.string.fa_unarchived_toast else R.string.fa_archived_toast,
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = painterResource(if (archived) R.drawable.ic_unarchive else R.drawable.ic_archive),
+                            contentDescription = null,
+                            tint = AloColors.Ink,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(Modifier.width(16.dp))
+                        Text(
+                            text = stringResource(if (archived) R.string.fa_unarchive else R.string.fa_archive),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = AloColors.Ink
+                        )
+                    }
                 }
                 if (hasIcon) {
                     Option(R.string.fi_remove, AloColors.Danger) {

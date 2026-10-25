@@ -25,7 +25,9 @@ data class LocalFolder(
     val id: Long,
     val name: String,
     val count: Int,
-    val cover: LocalMedia
+    val cover: LocalMedia,
+    /** Archivada por el usuario (ver ArchiveStore): no se muestra en su pestaña, sí en Ajustes > Archivados. */
+    val isArchived: Boolean = false
 )
 
 data class LocalLibrary(

@@ -195,6 +195,12 @@
     <string name="mp_repeat_all_on">Repetir lista activado</string>
     <string name="mp_repeat_one_on">Repetir canción activado</string>
     <string name="mp_repeat_off">Repetición desactivada</string>
+    <string name="fa_archive">Archivar</string>
+    <string name="fa_unarchive">Desarchivar</string>
+    <string name="fa_archived_toast">Carpeta archivada</string>
+    <string name="fa_unarchived_toast">Carpeta desarchivada</string>
+    <string name="fa_title">Archivados</string>
+    <string name="fa_empty">No hay carpetas archivadas</string>
     <string name="fi_set">Establecer icono</string>
     <string name="fi_remove">Quitar fondo</string>
     <string name="so_tags">Etiquetas</string>

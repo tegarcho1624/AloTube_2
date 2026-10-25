@@ -37,6 +37,9 @@ object SettingsRoutes {
     const val HISTORY = "settings_history"
     const val NOTIFICATIONS = "settings_notifications"
     const val DOWNLOAD = "settings_download"
+    const val ARCHIVED = "settings_archived"
+    const val ARCHIVED_MUSIC = "settings_archived_music"
+    const val ARCHIVED_VIDEO = "settings_archived_video"
 }
 
 /** Barra superior de los submenús: flecha para volver + título. */

@@ -104,6 +104,7 @@ fun MusicScreen(
                 onPlay = { list, index -> onVideoClick(list.map { it.toVideoItem() }, index) },
                 onMissing = viewModel::load,
                 onFolderOrder = { ids -> viewModel.setFolderOrder(FolderKind.MUSIC, ids) },
+                onFolderArchive = { f -> viewModel.setArchived(FolderKind.MUSIC, f.id, true) },
                 onTrackOrder = { bucketId, ids -> viewModel.setFileOrder(FolderKind.MUSIC, bucketId, ids) }
             )
         }
@@ -119,6 +120,7 @@ private fun MusicContent(
     onPlay: (List<LocalMedia>, Int) -> Unit,
     onMissing: () -> Unit,
     onFolderOrder: (List<Long>) -> Unit,
+    onFolderArchive: (LocalFolder) -> Unit,
     onTrackOrder: (Long, List<Long>) -> Unit
 ) {
     val accents = MaterialTheme.accents
@@ -165,9 +167,11 @@ private fun MusicContent(
 
             // Nivel 1: carpetas (toque largo + arrastre = reordenar; toque largo quieto = menú del ícono)
             else -> AudioFolderGrid(
-                state = state,
+                folders = state.visibleAudioFolders,
+                tracksOf = state::audioTracks,
                 onOpenFolder = onOpenFolder,
-                onOrder = onFolderOrder
+                onOrder = onFolderOrder,
+                onArchive = onFolderArchive
             )
         }
     }
@@ -244,15 +248,19 @@ private fun AudioTrackList(
 
 /**
  * Carpetas de música: toque largo + arrastre cambia su posición; toque largo sin mover abre el menú
- * "Establecer icono / Quitar fondo". El orden y los íconos se guardan en la app (no tocan los archivos).
+ * "Establecer icono / Quitar fondo / Archivar". También se usa en Ajustes > Archivados (con [archived]). El orden y los íconos se guardan en la app (no tocan los archivos).
  */
 @Composable
-private fun AudioFolderGrid(
-    state: LocalMediaUiState,
+fun AudioFolderGrid(
+    folders source: List<LocalFolder>,
+    tracksOf: (Long) -> List<LocalMedia>,
     onOpenFolder: (Long) -> Unit,
-    onOrder: (List<Long>) -> Unit
+    onOrder: (List<Long>) -> Unit,
+    /** Archivar (o Desarchivar si [archived]) desde el menú de toque largo. */
+    onArchive: (LocalFolder) -> Unit,
+    archived: Boolean = false
 ) {
-    val folders = rememberReorderList(state.audioFolders)
+    val folders = rememberReorderList(source)
     val gridState = rememberLazyGridState()
     var menuFolder by remember { mutableStateOf<LocalFolder?>(null) }
     val reorder = rememberGridReorderState(
@@ -279,7 +287,7 @@ private fun AudioFolderGrid(
         items(folders, key = { it.id }) { f ->
             AudioFolderCard(
                 folder = f,
-                tracks = state.audioTracks(f.id),
+                tracks = tracksOf(f.id),
                 onClick = { onOpenFolder(f.id) },
                 icon = rememberFolderIcon(FolderKind.MUSIC, f.id),
                 modifier = (
@@ -289,5 +297,11 @@ private fun AudioFolderGrid(
             )
         }
     }
-    FolderIconMenu(kind = FolderKind.MUSIC, target = menuFolder, onDismiss = { menuFolder = null })
+    FolderIconMenu(
+        kind = FolderKind.MUSIC,
+        target = menuFolder,
+        onDismiss = { menuFolder = null },
+        onArchive = onArchive,
+        archived = archived
+    )
 }

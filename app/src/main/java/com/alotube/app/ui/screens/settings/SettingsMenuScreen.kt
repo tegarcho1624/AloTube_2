@@ -32,6 +32,9 @@ fun SettingsMenuScreen(onBack: () -> Unit, onNavigate: (String) -> Unit) {
         SettingsRow(R.drawable.ic_act_download, stringResource(R.string.set_download)) {
             onNavigate(SettingsRoutes.DOWNLOAD)
         }
+        SettingsRow(R.drawable.ic_archive, stringResource(R.string.fa_title)) {
+            onNavigate(SettingsRoutes.ARCHIVED)
+        }
     }
 }
 

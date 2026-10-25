@@ -189,3 +189,10 @@ pestaña Actions → "Build APK" → Artifacts → AloTube-debug-apk.
 - Filtra en tiempo real por nombre de archivo (`name.contains(query, ignoreCase = true)`). Sin resultados: "No se encontraron archivos" centrado (`fs_none`). Con texto en el campo se muestran los resultados sin arrastre (así el orden guardado nunca se altera); con el campo vacío vuelve la lista normal con arrastre. Tocar un resultado reproduce con los resultados como cola.
 - `rememberFolderSearch(folder?.id)`: al salir de la carpeta y volver a entrar la búsqueda está cerrada y vacía. Solo afecta a la carpeta abierta, no a la vista de carpetas.
 - `versionCode` 25. **No cambia:** arrastrar y soltar, reproductor, mini-reproductor ni la búsqueda de YouTube.
+
+## Archivar carpetas (Música y Video Player)
+- **Persistencia**: `LocalFolder.isArchived` (por defecto false) se calcula con `data/local/ArchiveStore.kt` (SharedPreferences `folder_archive`, claves `music_<id>` / `video_<id>`). Solo es una marca de la app: no mueve ni borra archivos. `LocalMediaUiState` expone `visibleFolders` / `archivedFolders` y `visibleAudioFolders` / `archivedAudioFolders`; `LocalMediaViewModel.setArchived(kind, id, archived)`.
+- **Menú de toque largo** (`FolderIconMenu`): nueva opción "Archivar" (ícono `ic_archive`, caja con flecha abajo); en Archivados es "Desarchivar" (`ic_unarchive`, flecha arriba). Las pestañas Música y Video Player solo muestran las no archivadas.
+- **Ajustes > Archivados** (última fila de `SettingsMenuScreen`): `ArchivedMenuScreen` con "Música" y "Video Player" → `ArchivedFoldersScreen`, que reutiliza la MISMA cuadrícula (`AudioFolderGrid` / `VideoFolderGrid`, ahora públicas) con la lista de archivadas: arrastrar para reordenar, ícono personalizado y contador. Tocar una carpeta archivada no la abre (se desarchiva con toque largo). Usa el ViewModel de la Activity (el mismo de las pestañas).
+- `setFolderOrder` ahora reparte un orden parcial en los huecos de esas carpetas, así reordenar las archivadas no desordena las visibles (y al revés).
+- `versionCode` 26. **No cambia:** reproducción ni arrastre de archivos.

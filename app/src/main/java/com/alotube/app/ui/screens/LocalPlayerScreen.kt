@@ -108,6 +108,7 @@ fun LocalPlayerScreen(
                 onPlay = { list, index -> onVideoClick(list.map { it.toVideoItem() }, index) },
                 onMissing = viewModel::load,
                 onFolderOrder = { ids -> viewModel.setFolderOrder(FolderKind.VIDEO, ids) },
+                onFolderArchive = { f -> viewModel.setArchived(FolderKind.VIDEO, f.id, true) },
                 onFileOrder = { bucketId, ids -> viewModel.setFileOrder(FolderKind.VIDEO, bucketId, ids) }
             )
         }
@@ -169,6 +170,7 @@ private fun VideoFoldersContent(
     onPlay: (List<LocalMedia>, Int) -> Unit,
     onMissing: () -> Unit,
     onFolderOrder: (List<Long>) -> Unit,
+    onFolderArchive: (LocalFolder) -> Unit,
     onFileOrder: (Long, List<Long>) -> Unit
 ) {
     val accents = MaterialTheme.accents
@@ -207,9 +209,10 @@ private fun VideoFoldersContent(
 
             // Nivel 1: carpetas (toque largo + arrastre = reordenar; toque largo quieto = menú del ícono)
             else -> VideoFolderGrid(
-                source = state.folders,
+                source = state.visibleFolders,
                 onOpenFolder = onOpenFolder,
-                onOrder = onFolderOrder
+                onOrder = onFolderOrder,
+                onArchive = onFolderArchive
             )
         }
     }
@@ -276,13 +279,16 @@ private fun VideoFileGrid(
 
 /**
  * Carpetas de video: toque largo + arrastre cambia su posición; toque largo sin mover abre el menú
- * "Establecer icono / Quitar fondo". El orden y los íconos se guardan en la app (no tocan los archivos).
+ * "Establecer icono / Quitar fondo / Archivar". También se usa en Ajustes > Archivados (con [archived]). El orden y los íconos se guardan en la app (no tocan los archivos).
  */
 @Composable
-private fun VideoFolderGrid(
+fun VideoFolderGrid(
     source: List<LocalFolder>,
     onOpenFolder: (Long) -> Unit,
-    onOrder: (List<Long>) -> Unit
+    onOrder: (List<Long>) -> Unit,
+    /** Archivar (o Desarchivar si [archived]) desde el menú de toque largo. */
+    onArchive: (LocalFolder) -> Unit,
+    archived: Boolean = false
 ) {
     val folders = rememberReorderList(source)
     val gridState = rememberLazyGridState()
@@ -320,5 +326,11 @@ private fun VideoFolderGrid(
             )
         }
     }
-    FolderIconMenu(kind = FolderKind.VIDEO, target = menuFolder, onDismiss = { menuFolder = null })
+    FolderIconMenu(
+        kind = FolderKind.VIDEO,
+        target = menuFolder,
+        onDismiss = { menuFolder = null },
+        onArchive = onArchive,
+        archived = archived
+    )
 }
